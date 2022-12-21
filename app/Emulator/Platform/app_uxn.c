@@ -50,6 +50,7 @@ nil_talk(Device *d, Uint8 b0, Uint8 w) {
 
 static void
 console_talk(Device *d, Uint8 b0, Uint8 w) {
+// TODO how to write to stdout(port==0x8) or stderr(port=0x9) in an ios app?
 //    if(w && b0 > 0x7)
 //        write(b0 - 0x7, (char *)&d->dat[b0], 1);
 }
@@ -135,6 +136,28 @@ datetime_talk(Device *d, Uint8 b0, Uint8 w) {
     d->dat[0xa] = t->tm_isdst;
 }
 
+// TODO refactor system_deo_special() into uxn/src/devices/screen.c?
+// copied from uxn/src/uxnemu.c (SDL emulator)
+// screen_palette is in uxn/src/devices/screen.c so port independent
+void system_deo_special(Device *d, Uint8 port)
+{
+    if(port > 0x7 && port < 0xe)
+        screen_palette(&uxn_screen, &d->dat[0x8]);
+}
+
+// TODO refactor nil_dei() and nil_deo() from uxn/src/uxnmenu.c to uxn/src/devices/something.c?
+// copied from uxn/src/uxnemu.c (SDL emulator)
+static Uint8
+nil_dei(Device *d, Uint8 port)
+{
+    return d->dat[port];
+}
+static void
+nil_deo(Device *d, Uint8 port)
+{
+    (void)d;
+    (void)port;
+}
 
 void
 uxnapp_init(void) {
@@ -154,7 +177,7 @@ uxnapp_init(void) {
     }
 
     uxn_port(u, 0x0, system_dei, system_deo);
-    portuxn(u, 0x1, "console", console_talk);
+    uxn_port(u, 0x1, nil_dei, console_talk);
     devscreen = portuxn(u, 0x2, "screen", screen_talk);
     devaudio0 = portuxn(u, 0x3, "audio0", audio_talk);
     portuxn(u, 0x4, "audio1", audio_talk);
