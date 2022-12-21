@@ -20,9 +20,11 @@ static Uint8 reqdraw = 0;
 
 static void
 redraw(Uxn *u) {
-    if(devsystem->dat[0xe]) {
-        inspect(&uxn_screen, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
-    }
+    // system 0xe set means debug, for now skip it
+    // in the case of the screen this means add data/lines/things
+    //if(devsystem->dat[0xe]) {
+    //    inspect(&uxn_screen, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
+    //}
     PlatformBitmap bg = {
         .width = uxn_screen.width,
         .height = uxn_screen.height,
@@ -43,19 +45,8 @@ static void
 nil_talk(Device *d, Uint8 b0, Uint8 w) {
 }
 
-
-static void
-system_talk(Device *d, Uint8 b0, Uint8 w) {
-    if(!w) {
-        d->dat[0x2] = d->u->wst.ptr;
-        d->dat[0x3] = d->u->rst.ptr;
-    } else {
-        // TODO find equiv of putcolors()
-        //putcolors(&uxn_screen, &d->dat[0x8]);
-        reqdraw = 1;
-    }
-}
-
+/* removed system_talk(), use system_dei and system_deo from uxn/src/devices, all of those are port independent
+ */
 
 static void
 console_talk(Device *d, Uint8 b0, Uint8 w) {
@@ -67,13 +58,15 @@ console_talk(Device *d, Uint8 b0, Uint8 w) {
 static void
 screen_talk(Device *d, Uint8 b0, Uint8 w) {
     if(w && b0 == 0xe) {
-        Uint16 x = PEEK16(d->dat, 0x8);
-        Uint16 y = PEEK16(d->dat, 0xa);
-        Uint8 *addr = &d->mem[mempeek16(d->dat, 0xc)];
+        Uint16 x,y,mem_addr;
+        DEVPEEK16(x, 0x8);
+        DEVPEEK16(y, 0xa);
+        DEVPEEK16(mem_addr, 0xc);
+        Uint8 *addr = &d->mem[mem_addr];
         Layer *layer = d->dat[0xe] >> 4 & 0x1 ? &uxn_screen.fg : &uxn_screen.bg;
         Uint8 mode = d->dat[0xe] >> 5;
         if(!mode)
-            putpixel(&uxn_screen, layer, x, y, d->dat[0xe] & 0x3);
+            screen_write(&uxn_screen, layer, x, y, d->dat[0xe] & 0x3);
         else if(mode-- & 0x1)
             puticn(&uxn_screen, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
         else
@@ -160,7 +153,7 @@ uxnapp_init(void) {
         return;
     }
 
-    devsystem = portuxn(u, 0x0, "system", system_talk);
+    uxn_port(u, 0x0, system_dei, system_deo);
     portuxn(u, 0x1, "console", console_talk);
     devscreen = portuxn(u, 0x2, "screen", screen_talk);
     devaudio0 = portuxn(u, 0x3, "audio0", audio_talk);
