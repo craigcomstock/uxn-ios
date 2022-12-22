@@ -1,12 +1,13 @@
 #include <time.h>
 #include "emu_platform.h"
 #include "app_uxn.h"
+#include "stdlib.h" // calloc
 
 #include "uxn.h"
 
-#include "devices/screen.h"
-#include "devices/audio.c"
-#include "devices/screen.c"
+//#include "devices/screen.h"
+//#include "devices/audio.c"
+//#include "devices/screen.c"
 #if DEBUG
 #include "uxn.c"
 #else
@@ -14,7 +15,8 @@
 #endif
 
 static Uxn _uxn;
-static Device *devsystem, *devscreen, *devmouse, *devaudio0;
+static Device *devsystem;
+//*devscreen, *devmouse, *devaudio0;
 static Uint8 reqdraw = 0;
 
 
@@ -25,6 +27,7 @@ redraw(Uxn *u) {
     //if(devsystem->dat[0xe]) {
     //    inspect(&uxn_screen, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
     //}
+    /*
     PlatformBitmap bg = {
         .width = uxn_screen.width,
         .height = uxn_screen.height,
@@ -38,6 +41,7 @@ redraw(Uxn *u) {
     PlatformDrawBackground(&bg);
     PlatformDrawForeground(&fg);
     reqdraw = 0;
+     */
 }
 
 
@@ -55,7 +59,7 @@ console_talk(Device *d, Uint8 b0, Uint8 w) {
 //        write(b0 - 0x7, (char *)&d->dat[b0], 1);
 }
 
-
+/*
 static void
 screen_talk(Device *d, Uint8 b0, Uint8 w) {
     if(w && b0 == 0xe) {
@@ -135,15 +139,17 @@ datetime_talk(Device *d, Uint8 b0, Uint8 w) {
     mempoke16(d->dat, 0x08, t->tm_yday);
     d->dat[0xa] = t->tm_isdst;
 }
-
+*/
 // TODO refactor system_deo_special() into uxn/src/devices/screen.c?
 // copied from uxn/src/uxnemu.c (SDL emulator)
 // screen_palette is in uxn/src/devices/screen.c so port independent
 void system_deo_special(Device *d, Uint8 port)
 {
+    /*
     if(port > 0x7 && port < 0xe)
         screen_palette(&uxn_screen, &d->dat[0x8]);
-}
+*/
+     }
 
 // TODO refactor nil_dei() and nil_deo() from uxn/src/uxnmenu.c to uxn/src/devices/something.c?
 // copied from uxn/src/uxnemu.c (SDL emulator)
@@ -159,44 +165,45 @@ nil_deo(Device *d, Uint8 port)
     (void)port;
 }
 
+#define RAMSIZE 0x10000
+
 void
 uxnapp_init(void) {
     Uxn* u = &_uxn;
 
-    bootuxn(u);
+    uxn_boot(u, calloc(RAMSIZE, 1));
 
     // loaduxn
-    PlatformCopyRom(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM);
-    
+    PlatformCopyRom(u->ram + PAGE_PROGRAM, RAMSIZE - PAGE_PROGRAM);
     u16 w, h;
     PlatformGetScreenSize(&w, &h);
     w /= 8;
     h /= 8;
-    if (!initppu(&uxn_screen, w, h)) {
-        return;
-    }
+//    if (!initppu(&uxn_screen, w, h)) {
+//        return;
+//    }
 
-    uxn_port(u, 0x0, system_dei, system_deo);
-    uxn_port(u, 0x1, nil_dei, console_talk);
-    devscreen = portuxn(u, 0x2, "screen", screen_talk);
-    devaudio0 = portuxn(u, 0x3, "audio0", audio_talk);
-    portuxn(u, 0x4, "audio1", audio_talk);
-    portuxn(u, 0x5, "audio2", audio_talk);
-    portuxn(u, 0x6, "audio3", audio_talk);
-    portuxn(u, 0x7, "---", nil_talk);
-    portuxn(u, 0x8, "controller", nil_talk);
-    devmouse = portuxn(u, 0x9, "mouse", nil_talk);
-    portuxn(u, 0xa, "file", file_talk);
-    portuxn(u, 0xb, "datetime", datetime_talk);
-    portuxn(u, 0xc, "---", nil_talk);
-    portuxn(u, 0xd, "---", nil_talk);
-    portuxn(u, 0xe, "---", nil_talk);
-    portuxn(u, 0xf, "---", nil_talk);
+    //uxn_port(u, 0x0, system_dei, system_deo);
+    //uxn_port(u, 0x1, nil_dei, console_talk);
+    //devscreen = portuxn(u, 0x2, "screen", screen_talk);
+    //devaudio0 = portuxn(u, 0x3, "audio0", audio_talk);
+    //portuxn(u, 0x4, "audio1", audio_talk);
+    //portuxn(u, 0x5, "audio2", audio_talk);
+    //portuxn(u, 0x6, "audio3", audio_talk);
+    //portuxn(u, 0x7, "---", nil_talk);
+    //portuxn(u, 0x8, "controller", nil_talk);
+    //devmouse = portuxn(u, 0x9, "mouse", nil_talk);
+    //portuxn(u, 0xa, "file", file_talk);
+    //portuxn(u, 0xb, "datetime", datetime_talk);
+    //portuxn(u, 0xc, "---", nil_talk);
+    //portuxn(u, 0xd, "---", nil_talk);
+    //portuxn(u, 0xe, "---", nil_talk);
+    //portuxn(u, 0xf, "---", nil_talk);
 
-    mempoke16(devscreen->dat, 2, uxn_screen.hor * 8);
-    mempoke16(devscreen->dat, 4, uxn_screen.ver * 8);
+//    mempoke16(devscreen->dat, 2, uxn_screen.hor * 8);
+//    mempoke16(devscreen->dat, 4, uxn_screen.ver * 8);
 
-    evaluxn(u, PAGE_PROGRAM);
+    uxn_eval(u, PAGE_PROGRAM);
     redraw(u);
 }
 
@@ -204,17 +211,17 @@ uxnapp_init(void) {
 void
 uxnapp_deinit(void) {
     PlatformAudioCloseOutput();
-    PlatformFree(uxn_screen.bg.pixels);
-    PlatformFree(uxn_screen.fg.pixels);
+    //PlatformFree(uxn_screen.bg.pixels);
+    //PlatformFree(uxn_screen.fg.pixels);
 }
 
 
 void
 uxnapp_runloop(void) {
-    Uxn* u = &_uxn;
-    evaluxn(u, mempeek16(devscreen->dat, 0));
-    if(reqdraw || devsystem->dat[0xe])
-        redraw(u);
+    //Uxn* u = &_uxn;
+    //uxn_eval(u, mempeek16(devscreen->dat, 0));
+    //if(reqdraw || devsystem->dat[0xe])
+    //    redraw(u);
 }
 
 
@@ -225,7 +232,7 @@ uxnapp_setdebug(u8 debug) {
     redraw(u);
 }
 
-
+/*
 static int
 clamp(int val, int min, int max) {
     return (val >= min) ? (val <= max) ? val : max : min;
@@ -278,3 +285,4 @@ uxnapp_audio_callback(Uint8 *stream, Uint32 len) {
         PlatformAudioPauseOutput();
     }
 }
+*/
