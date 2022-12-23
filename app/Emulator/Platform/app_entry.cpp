@@ -28,17 +28,17 @@ PlatformDelegateSetDebug(u8 debug) {
 
 void
 PlatformDelegateMoveMouse(i16 x, i16 y) {
-    uxnapp_movemouse(x, y);
+    //uxnapp_movemouse(x, y);
 }
 
 
 void
 PlatformDelegateMouseButton(PlatformMouseButton button, u8 down) {
-    uxnapp_setmousebutton(button, down);
+    //uxnapp_setmousebutton(button, down);
 }
 
 
 void
 PlatformDelegateRenderAudio(u8* buffer, u32 size) {
-    uxnapp_audio_callback(buffer, size);
+    //uxnapp_audio_callback(buffer, size);
 }

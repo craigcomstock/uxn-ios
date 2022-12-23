@@ -43,6 +43,7 @@ PlatformDrawForeground(const PlatformBitmap* bitmap) {
 
 void
 PlatformCopyRom(u8* buffer, u32 size) {
+    fprintf(stderr, "PlatformCopyRom(buffer=%p, size=%d)\n", buffer, size);
     NSData* data = Platform.sharedPlatform.romData;
     if (data && data.length <= size) {
         memcpy(buffer, data.bytes, data.length);

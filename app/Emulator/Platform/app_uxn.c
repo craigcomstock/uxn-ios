@@ -5,6 +5,7 @@
 #include "stdio.h" // fprintf, stderr
 #include "uxn.h"
 
+#include "devices/system.c"
 //#include "devices/screen.h"
 //#include "devices/audio.c"
 //#include "devices/screen.c"
@@ -53,7 +54,9 @@ nil_talk(Device *d, Uint8 b0, Uint8 w) {
  */
 
 static void
-console_talk(Device *d, Uint8 b0, Uint8 w) {
+console_deo(Device *d, Uint8 b0, Uint8 w) {
+    //fprintf(stderr,"console_deo() called, d=%p, b0=%d, w=%d\n, c=%c\n", d, b0, w, w);
+    fprintf(stdout,"%c", w);
 // TODO how to write to stdout(port==0x8) or stderr(port=0x9) in an ios app?
 //    if(w && b0 > 0x7)
 //        write(b0 - 0x7, (char *)&d->dat[b0], 1);
@@ -169,11 +172,15 @@ nil_deo(Device *d, Uint8 port)
 
 void
 uxnapp_init(void) {
-    fprintf(stderr, "uxnapp_init()");
+    fprintf(stderr, "uxnapp_init()\n");
     Uxn* u = &_uxn;
 
-    uxn_boot(u, calloc(RAMSIZE, 1));
+    fprintf(stderr, "before uxn_boot()\n");
+    Uint8 dat[0x10000];
+    uxn_boot(u, dat);
+    //uxn_boot(u, calloc(RAMSIZE, 1));
 
+    fprintf(stderr, "u->ram is %p\n", u->ram);
     // loaduxn
     PlatformCopyRom(u->ram + PAGE_PROGRAM, RAMSIZE - PAGE_PROGRAM);
     u16 w, h;
@@ -184,8 +191,8 @@ uxnapp_init(void) {
 //        return;
 //    }
 
-    //uxn_port(u, 0x0, system_dei, system_deo);
-    //uxn_port(u, 0x1, nil_dei, console_talk);
+    uxn_port(u, 0x0, system_dei, system_deo);
+    uxn_port(u, 0x1, nil_dei, console_deo);
     //devscreen = portuxn(u, 0x2, "screen", screen_talk);
     //devaudio0 = portuxn(u, 0x3, "audio0", audio_talk);
     //portuxn(u, 0x4, "audio1", audio_talk);
@@ -205,7 +212,7 @@ uxnapp_init(void) {
 //    mempoke16(devscreen->dat, 4, uxn_screen.ver * 8);
 
     uxn_eval(u, PAGE_PROGRAM);
-    redraw(u);
+    //redraw(u);
 }
 
 
@@ -287,3 +294,10 @@ uxnapp_audio_callback(Uint8 *stream, Uint32 len) {
     }
 }
 */
+
+// TODO, not sure what this needs to do, in SDL emu it calls return !SDL_QuitRequested();
+// in uxncli it simply returns 1
+int uxn_interrupt(void)
+{
+    return 1;
+}

@@ -118,11 +118,13 @@ timeout:
 int
 uxn_boot(Uxn *u, Uint8 *ram)
 {
+//    fprintf(stderr,"uxn_boot()\n");
 	Uint32 i;
 	char *cptr = (char *)u;
 	for(i = 0; i < sizeof(*u); i++)
 		cptr[i] = 0x00;
 	u->ram = ram;
+//    fprintf(stderr,"uxn_boot() loaded %d ram\n", i);
 	return 1;
 }
 
