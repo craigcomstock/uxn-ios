@@ -2,7 +2,7 @@
 #include "emu_platform.h"
 #include "app_uxn.h"
 #include "stdlib.h" // calloc
-
+#include "stdio.h" // fprintf, stderr
 #include "uxn.h"
 
 //#include "devices/screen.h"
@@ -169,6 +169,7 @@ nil_deo(Device *d, Uint8 port)
 
 void
 uxnapp_init(void) {
+    fprintf(stderr, "uxnapp_init()");
     Uxn* u = &_uxn;
 
     uxn_boot(u, calloc(RAMSIZE, 1));
