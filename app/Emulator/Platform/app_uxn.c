@@ -6,7 +6,7 @@
 #include "uxn.h"
 
 #include "devices/system.c"
-//#include "devices/screen.h"
+#include "devices/screen.h"
 //#include "devices/audio.c"
 //#include "devices/screen.c"
 #if DEBUG
@@ -16,6 +16,7 @@
 #endif
 
 static Uxn _uxn;
+UxnScreen uxn_screen;
 static Device *devsystem;
 //*devscreen, *devmouse, *devaudio0;
 static Uint8 reqdraw = 0;
@@ -70,28 +71,33 @@ console_deo(Device *d, Uint8 port) {
    // }
 }
 
-/*
 static void
-screen_talk(Device *d, Uint8 b0, Uint8 w) {
-    if(w && b0 == 0xe) {
-        Uint16 x,y,mem_addr;
+screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
+{
+  if(x < p->width && y < p->height) {
+    Uint32 i = x + y * p->width;
+    if(color != layer->pixels[i]) {
+      layer->pixels[i] = color;
+      layer->changed = 1;
+    }
+  }
+}
+
+void
+screen_deo(Device *d, Uint8 port) {
+    if(port == 0xe) {
+        Uint16 x,y;
+        Uint8 layer = d->dat[0xe] & 0x40;
         DEVPEEK16(x, 0x8);
         DEVPEEK16(y, 0xa);
-        DEVPEEK16(mem_addr, 0xc);
-        Uint8 *addr = &d->mem[mem_addr];
-        Layer *layer = d->dat[0xe] >> 4 & 0x1 ? &uxn_screen.fg : &uxn_screen.bg;
-        Uint8 mode = d->dat[0xe] >> 5;
-        if(!mode)
-            screen_write(&uxn_screen, layer, x, y, d->dat[0xe] & 0x3);
-        else if(mode-- & 0x1)
-            puticn(&uxn_screen, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
-        else
-            putchr(&uxn_screen, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
+        screen_write(&uxn_screen, layer ? &uxn_screen.fg : &uxn_screen.bg, x, y, d->dat[0xe] & 0x3);
+        if(d->dat[0x6] & 0x01) DEVPOKE16(0x8, x + 1); /* auto x+1 */
+        if(d->dat[0x6] & 0x02) DEVPOKE16(0xa, y + 1); /* auto y+1 */
         reqdraw = 1;
     }
 }
 
-
+/*
 static void
 file_talk(Device *d, Uint8 b0, Uint8 w) {
     Uint8 read = b0 == 0xd;
@@ -201,7 +207,8 @@ uxnapp_init(void) {
 
     uxn_port(u, 0x0, system_dei, system_deo);
     uxn_port(u, 0x1, nil_dei, console_deo);
-    //devscreen = portuxn(u, 0x2, "screen", screen_talk);
+    //devscreen =
+    uxn_port(u, 0x2, /*screen_dei*/ nil_dei, screen_deo);
     //devaudio0 = portuxn(u, 0x3, "audio0", audio_talk);
     //portuxn(u, 0x4, "audio1", audio_talk);
     //portuxn(u, 0x5, "audio2", audio_talk);
