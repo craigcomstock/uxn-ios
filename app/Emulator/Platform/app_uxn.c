@@ -54,12 +54,20 @@ nil_talk(Device *d, Uint8 b0, Uint8 w) {
  */
 
 static void
-console_deo(Device *d, Uint8 b0, Uint8 w) {
-    //fprintf(stderr,"console_deo() called, d=%p, b0=%d, w=%d\n, c=%c\n", d, b0, w, w);
-    fprintf(stdout,"%c", w);
-// TODO how to write to stdout(port==0x8) or stderr(port=0x9) in an ios app?
-//    if(w && b0 > 0x7)
-//        write(b0 - 0x7, (char *)&d->dat[b0], 1);
+console_deo(Device *d, Uint8 port) {
+    // copied from uxn/src/uxnemu.c
+    //fprintf(stderr, "console_deo(device=%p, port=%d)\n", d, port);
+    FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr : 0;
+    //fprintf(stderr, "fd=%d\n");
+    // can't be if (fd) because stdout/stderr can be 0 or 1 instead of NULL
+    
+    if(fd != NULL) {
+        fputc(d->dat[port], fd);
+        fflush(fd);
+    }
+    //if (port == 0x8) {
+    //    fputc(d->dat[port], stdout);
+   // }
 }
 
 /*
