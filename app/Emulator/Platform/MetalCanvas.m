@@ -153,6 +153,10 @@
 }
 
 - (void)updateTexture:(id<MTLTexture>)texture withData:(NSData*)data {
+    /*if(data == NULL) {
+        fprintf(stderr, "oops, updateTexture() got NULL data\n");
+        return;
+    }*/
     MTLRegion region = {
         {0, 0, 0},
         {_viewportSize.x, _viewportSize.y, 1}

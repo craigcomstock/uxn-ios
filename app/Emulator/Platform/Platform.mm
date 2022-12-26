@@ -31,13 +31,15 @@ PlatformGetScreenSize(u16* width, u16* height) {
 
 void
 PlatformDrawBackground(const PlatformBitmap* bitmap) {
-    [Platform.sharedPlatform setBackgroundPixels:bitmap->pixels];
+    if(bitmap->pixels != NULL)
+        [Platform.sharedPlatform setBackgroundPixels:bitmap->pixels];
 }
 
 
 void
 PlatformDrawForeground(const PlatformBitmap* bitmap) {
-    [Platform.sharedPlatform setForegroundPixels:bitmap->pixels];
+    if(bitmap->pixels != NULL)
+        [Platform.sharedPlatform setForegroundPixels:bitmap->pixels];
 }
 
 

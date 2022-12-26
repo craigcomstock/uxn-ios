@@ -29,7 +29,7 @@ redraw(Uxn *u) {
     //if(devsystem->dat[0xe]) {
     //    inspect(&uxn_screen, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
     //}
-    /*
+    
     PlatformBitmap bg = {
         .width = uxn_screen.width,
         .height = uxn_screen.height,
@@ -40,10 +40,10 @@ redraw(Uxn *u) {
         .height = uxn_screen.height,
         .pixels = uxn_screen.fg.pixels,
     };
+    // todo, here uxn_screen.pixels, fb/bg pixels are all NULL
     PlatformDrawBackground(&bg);
     PlatformDrawForeground(&fg);
     reqdraw = 0;
-     */
 }
 
 
@@ -69,6 +69,34 @@ console_deo(Device *d, Uint8 port) {
     //if (port == 0x8) {
     //    fputc(d->dat[port], stdout);
    // }
+}
+
+void
+screen_clear(UxnScreen *p, Layer *layer)
+{
+    Uint32 i, size = p->width * p->height;
+    for(i = 0; i < size; i++)
+        layer->pixels[i] = 0x00;
+    layer->changed = 1;
+}
+
+void
+screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
+{
+    Uint8
+        *bg = realloc(p->bg.pixels, width * height),
+        *fg = realloc(p->fg.pixels, width * height);
+    Uint32
+        *pixels = realloc(p->pixels, width * height * sizeof(Uint32));
+    if(bg) p->bg.pixels = bg;
+    if(fg) p->fg.pixels = fg;
+    if(pixels) p->pixels = pixels;
+    if(bg && fg && pixels) {
+        p->width = width;
+        p->height = height;
+        screen_clear(p, &p->bg);
+        screen_clear(p, &p->fg);
+    }
 }
 
 static void
@@ -192,6 +220,7 @@ uxnapp_init(void) {
     fprintf(stderr, "before uxn_boot()\n");
     Uint8 dat[0x10000];
     uxn_boot(u, dat);
+    // maybe PlatformAlloc()
     //uxn_boot(u, calloc(RAMSIZE, 1));
 
     fprintf(stderr, "u->ram is %p\n", u->ram);
@@ -204,8 +233,11 @@ uxnapp_init(void) {
 //    if (!initppu(&uxn_screen, w, h)) {
 //        return;
 //    }
+    screen_resize(&uxn_screen, w, h);
+    // I think I need a screen_resize() like function which initializes both layers in uxn_screen.
+    
 
-    uxn_port(u, 0x0, system_dei, system_deo);
+    devsystem = uxn_port(u, 0x0, system_dei, system_deo);
     uxn_port(u, 0x1, nil_dei, console_deo);
     //devscreen =
     uxn_port(u, 0x2, /*screen_dei*/ nil_dei, screen_deo);
@@ -227,7 +259,7 @@ uxnapp_init(void) {
 //    mempoke16(devscreen->dat, 4, uxn_screen.ver * 8);
 
     uxn_eval(u, PAGE_PROGRAM);
-    //redraw(u);
+    redraw(u);
 }
 
 
@@ -241,10 +273,10 @@ uxnapp_deinit(void) {
 
 void
 uxnapp_runloop(void) {
-    //Uxn* u = &_uxn;
-    //uxn_eval(u, mempeek16(devscreen->dat, 0));
-    //if(reqdraw || devsystem->dat[0xe])
-    //    redraw(u);
+    Uxn* u = &_uxn;
+    uxn_eval(u, PAGE_PROGRAM);
+    if(reqdraw || devsystem->dat[0xe]) // request draw || debug mode ( system 0xe set )
+        redraw(u);
 }
 
 
