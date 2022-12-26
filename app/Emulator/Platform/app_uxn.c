@@ -8,7 +8,6 @@
 #include "devices/system.c"
 #include "devices/screen.h"
 //#include "devices/audio.c"
-//#include "devices/screen.c"
 #if DEBUG
 #include "uxn.c"
 #else
@@ -40,7 +39,7 @@ redraw(Uxn *u) {
         .height = uxn_screen.height,
         .pixels = uxn_screen.fg.pixels,
     };
-    // todo, here uxn_screen.pixels, fb/bg pixels are all NULL
+    // screen_resize() call elsewhere initializes these arrays of pixels
     PlatformDrawBackground(&bg);
     PlatformDrawForeground(&fg);
     reqdraw = 0;
@@ -109,6 +108,17 @@ screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
       layer->changed = 1;
     }
   }
+}
+
+Uint8 screen_dei(Device *d, Uint8 port)
+{
+    switch(port) {
+        case 0x2: return uxn_screen.width >> 8;
+        case 0x3: return uxn_screen.width;
+        case 0x4: return uxn_screen.height >> 8;
+        case 0x5: return uxn_screen.height;
+        default: return d->dat[port];
+    }
 }
 
 void
@@ -228,8 +238,8 @@ uxnapp_init(void) {
     PlatformCopyRom(u->ram + PAGE_PROGRAM, RAMSIZE - PAGE_PROGRAM);
     u16 w, h;
     PlatformGetScreenSize(&w, &h);
-    w /= 8;
-    h /= 8;
+    //w /= 8;
+    //h /= 8;
 //    if (!initppu(&uxn_screen, w, h)) {
 //        return;
 //    }
@@ -240,20 +250,33 @@ uxnapp_init(void) {
     devsystem = uxn_port(u, 0x0, system_dei, system_deo);
     uxn_port(u, 0x1, nil_dei, console_deo);
     //devscreen =
-    uxn_port(u, 0x2, /*screen_dei*/ nil_dei, screen_deo);
+    uxn_port(u, 0x2, /*screen_dei*/ screen_dei, screen_deo);
     //devaudio0 = portuxn(u, 0x3, "audio0", audio_talk);
+    uxn_port(u, 0x3, nil_dei, nil_deo);
     //portuxn(u, 0x4, "audio1", audio_talk);
+    uxn_port(u, 0x4, nil_dei, nil_deo);
     //portuxn(u, 0x5, "audio2", audio_talk);
+    uxn_port(u, 0x5, nil_dei, nil_deo);
     //portuxn(u, 0x6, "audio3", audio_talk);
+    uxn_port(u, 0x6, nil_dei, nil_deo);
     //portuxn(u, 0x7, "---", nil_talk);
+    uxn_port(u, 0x7, nil_dei, nil_deo);
     //portuxn(u, 0x8, "controller", nil_talk);
+    uxn_port(u, 0x8, nil_dei, nil_deo);
     //devmouse = portuxn(u, 0x9, "mouse", nil_talk);
+    uxn_port(u, 0x9, nil_dei, nil_deo);
     //portuxn(u, 0xa, "file", file_talk);
+    uxn_port(u, 0xa, nil_dei, nil_deo);
     //portuxn(u, 0xb, "datetime", datetime_talk);
+    uxn_port(u, 0xa, nil_dei, nil_deo);
     //portuxn(u, 0xc, "---", nil_talk);
+    uxn_port(u, 0xb, nil_dei, nil_deo);
     //portuxn(u, 0xd, "---", nil_talk);
+    uxn_port(u, 0xc, nil_dei, nil_deo);
     //portuxn(u, 0xe, "---", nil_talk);
+    uxn_port(u, 0xd, nil_dei, nil_deo);
     //portuxn(u, 0xf, "---", nil_talk);
+    uxn_port(u, 0xe, nil_dei, nil_deo);
 
 //    mempoke16(devscreen->dat, 2, uxn_screen.hor * 8);
 //    mempoke16(devscreen->dat, 4, uxn_screen.ver * 8);

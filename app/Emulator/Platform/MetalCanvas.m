@@ -148,8 +148,10 @@
 }
 
 - (void)updateTextures {
-    [self updateTexture:self.backgroundTexture withData:Platform.sharedPlatform.bgPixels];
-    [self updateTexture:self.foregroundTexture withData:Platform.sharedPlatform.fgPixels];
+    if(Platform.sharedPlatform.bgPixels != NULL)
+        [self updateTexture:self.backgroundTexture withData:Platform.sharedPlatform.bgPixels];
+    if(Platform.sharedPlatform.fgPixels != NULL)
+        [self updateTexture:self.foregroundTexture withData:Platform.sharedPlatform.fgPixels];
 }
 
 - (void)updateTexture:(id<MTLTexture>)texture withData:(NSData*)data {
@@ -164,7 +166,7 @@
 
     NSUInteger bytesPerRow = 4 * _viewportSize.x;
     const void* pixels = data.bytes;
-    
+
     [texture replaceRegion:region mipmapLevel:0 withBytes:pixels bytesPerRow:bytesPerRow];
 }
 
