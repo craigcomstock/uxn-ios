@@ -45,14 +45,6 @@ redraw(Uxn *u) {
     reqdraw = 0;
 }
 
-
-static void
-nil_talk(Device *d, Uint8 b0, Uint8 w) {
-}
-
-/* removed system_talk(), use system_dei and system_deo from uxn/src/devices, all of those are port independent
- */
-
 static void
 console_deo(Device *d, Uint8 port) {
     // copied from uxn/src/uxnemu.c
@@ -75,18 +67,27 @@ screen_clear(UxnScreen *p, Layer *layer)
 {
     Uint32 i, size = p->width * p->height;
     for(i = 0; i < size; i++)
-        layer->pixels[i] = 0x00;
+        layer->pixels[i] = 0xff; // todo, experiment with white?
     layer->changed = 1;
 }
 
 void
 screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 {
+    // I get an EXC_BAD_ACCESS in Platform.m - (void)setBackgroundPixels:(void *)pixels {
+    //CGSize canvasSize = self.canvasSize;
+    //NSUInteger count = 4 * canvasSize.width * canvasSize.height;
+  //  self.bgPixels = [NSData dataWithBytes:pixels length:count];
+//}
+    // but why? is it because this realloc() isn't quite right? doesn't PERSIST somehow? Maybe need to call calloc/PlatformAlloc?
+    //free(p->bg.pixels);
+    //free(p->fg.pixels);
+    //free(p->pixels);
     Uint8
-        *bg = realloc(p->bg.pixels, width * height),
-        *fg = realloc(p->fg.pixels, width * height);
+        *bg = realloc(p->bg.pixels, 4 * width * height),
+        *fg = realloc(p->fg.pixels, 4 * width * height);
     Uint32
-        *pixels = realloc(p->pixels, width * height * sizeof(Uint32));
+        *pixels = realloc(p->pixels, 4 * width * height * sizeof(Uint32));
     if(bg) p->bg.pixels = bg;
     if(fg) p->fg.pixels = fg;
     if(pixels) p->pixels = pixels;
