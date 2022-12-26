@@ -1,4 +1,5 @@
 set -x
+set -e
 cd uxn/projects/examples
 pwd
 for f in $(find . -name '*.tal'); do

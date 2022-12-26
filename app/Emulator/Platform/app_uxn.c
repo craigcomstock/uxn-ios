@@ -67,7 +67,7 @@ screen_clear(UxnScreen *p, Layer *layer)
 {
     Uint32 i, size = p->width * p->height;
     for(i = 0; i < size; i++)
-        layer->pixels[i] = 0xff; // todo, experiment with white?
+        layer->pixels[i] = 0x00;
     layer->changed = 1;
 }
 
@@ -126,10 +126,11 @@ void
 screen_deo(Device *d, Uint8 port) {
     if(port == 0xe) {
         Uint16 x,y;
-        Uint8 layer = d->dat[0xe] & 0x40;
+        Uint8 layerIndex = d->dat[0xe] & 0x40;
         DEVPEEK16(x, 0x8);
         DEVPEEK16(y, 0xa);
-        screen_write(&uxn_screen, layer ? &uxn_screen.fg : &uxn_screen.bg, x, y, d->dat[0xe] & 0x3);
+        Layer layer = *(layerIndex ? &uxn_screen.fg : &uxn_screen.bg);
+        screen_write(&uxn_screen, &layer, x, y, d->dat[0xe] & 0x3);
         if(d->dat[0x6] & 0x01) DEVPOKE16(0x8, x + 1); /* auto x+1 */
         if(d->dat[0x6] & 0x02) DEVPOKE16(0xa, y + 1); /* auto y+1 */
         reqdraw = 1;
@@ -196,16 +197,31 @@ datetime_talk(Device *d, Uint8 b0, Uint8 w) {
     d->dat[0xa] = t->tm_isdst;
 }
 */
+
+// copied from uxn/src/devices/screen.c
+void
+screen_palette(UxnScreen *p, Uint8 *addr)
+{
+    int i, shift;
+    for(i = 0, shift = 4; i < 4; ++i, shift ^= 4) {
+        Uint8
+            r = (addr[0 + i / 2] >> shift) & 0x0f,
+            g = (addr[2 + i / 2] >> shift) & 0x0f,
+            b = (addr[4 + i / 2] >> shift) & 0x0f;
+        p->palette[i] = 0x0f000000 | r << 16 | g << 8 | b;
+        p->palette[i] |= p->palette[i] << 4;
+    }
+    p->fg.changed = p->bg.changed = 1;
+}
+
 // TODO refactor system_deo_special() into uxn/src/devices/screen.c?
 // copied from uxn/src/uxnemu.c (SDL emulator)
 // screen_palette is in uxn/src/devices/screen.c so port independent
 void system_deo_special(Device *d, Uint8 port)
 {
-    /*
     if(port > 0x7 && port < 0xe)
         screen_palette(&uxn_screen, &d->dat[0x8]);
-*/
-     }
+}
 
 // TODO refactor nil_dei() and nil_deo() from uxn/src/uxnmenu.c to uxn/src/devices/something.c?
 // copied from uxn/src/uxnemu.c (SDL emulator)

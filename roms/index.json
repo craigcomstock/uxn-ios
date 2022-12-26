@@ -26,6 +26,7 @@
     {
         "section": "devices",
         "roms": [
+            {"file": "devices/top-left-pixel.rom", "description": ""},
             {"file": "devices/audio.channels.rom", "description": ""},
             {"file": "devices/audio.rom", "description": ""},
             {"file": "devices/console.echo.rom", "description": ""},
