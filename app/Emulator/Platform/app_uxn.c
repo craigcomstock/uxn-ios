@@ -16,7 +16,7 @@
 
 static Uxn _uxn;
 UxnScreen uxn_screen;
-static Device *devsystem;
+static Device *devsystem, *devscreen;
 //*devscreen, *devmouse, *devaudio0;
 static Uint8 reqdraw = 0;
 
@@ -42,6 +42,7 @@ redraw(Uxn *u) {
     // screen_resize() call elsewhere initializes these arrays of pixels
     PlatformDrawBackground(&bg);
     PlatformDrawForeground(&fg);
+    fprintf(stderr, "in redraw() set reqdraw=0\n");
     reqdraw = 0;
 }
 
@@ -65,9 +66,34 @@ console_deo(Device *d, Uint8 port) {
 void
 screen_clear(UxnScreen *p, Layer *layer)
 {
-    Uint32 i, size = p->width * p->height;
-    for(i = 0; i < size; i++)
-        layer->pixels[i] = 0x00;
+    Uint32 i, size = p->width * p->height * 4;
+    Uint32 x,y;
+    for(x=0; x<p->width; x++) {
+        for(y=0; y<p->height; y++) {
+            Uint32 loc = (y*p->width + x) *4;
+            layer->pixels[loc] = y & 0xff; // blue
+            layer->pixels[loc+1] = y & 0xff; // green
+            layer->pixels[loc+2] = x & 0xff; // red
+            layer->pixels[loc+3] = 0x0; // alpha (transparency)
+        }
+    }
+    /*
+    for(i = 0; i < size; i+=4)
+    {
+        Uint32 value = (0xffffffff / size) * i * 3/4;
+        //fprintf(stderr,"%0x\n", value);
+        Uint8 b,g,r,a; // b, g, r, a
+        b=(value >> 12); // 11223344 -> 00000011
+        g=(value >> 8) & 0xff; // 11223344 -> 00000022
+        r=(value >> 4) & 0xff;
+        a=0x0;
+        //a=(value) & 0xff;
+        layer->pixels[i] = b;
+        layer->pixels[i+1] = g;
+        layer->pixels[i+2] = r;
+        layer->pixels[i+3] = a;
+    }
+ */
     layer->changed = 1;
 }
 
@@ -80,18 +106,21 @@ screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
   //  self.bgPixels = [NSData dataWithBytes:pixels length:count];
 //}
     // but why? is it because this realloc() isn't quite right? doesn't PERSIST somehow? Maybe need to call calloc/PlatformAlloc?
-    //free(p->bg.pixels);
-    //free(p->fg.pixels);
-    //free(p->pixels);
+    if (p->bg.pixels != NULL) free(p->bg.pixels);
+    if (p->fg.pixels != NULL) free(p->fg.pixels);
+    /* if (p->pixels != NULL) free(p->pixels); */
     Uint8
-        *bg = realloc(p->bg.pixels, 4 * width * height),
-        *fg = realloc(p->fg.pixels, 4 * width * height);
-    Uint32
-        *pixels = realloc(p->pixels, 4 * width * height * sizeof(Uint32));
+        *bg = malloc(4 * width * height),
+        *fg = malloc(4 * width * height);
+    //Uint32
+    //    *pixels = malloc(4 * width * height * sizeof(Uint32));
     if(bg) p->bg.pixels = bg;
     if(fg) p->fg.pixels = fg;
-    if(pixels) p->pixels = pixels;
-    if(bg && fg && pixels) {
+    //if(pixels) p->pixels = pixels;
+    fprintf(stderr,"p->bg.pixels=%p, p->fg.pixels=%p\n",
+             p->bg.pixels, p->fg.pixels /*, p->pixels */);
+    /* p->pixels=%p\n",*/
+    if(bg && fg /* && pixels */) {
         p->width = width;
         p->height = height;
         screen_clear(p, &p->bg);
@@ -103,11 +132,16 @@ static void
 screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 {
   if(x < p->width && y < p->height) {
-    Uint32 i = x + y * p->width;
-    if(color != layer->pixels[i]) {
-      layer->pixels[i] = color;
-      layer->changed = 1;
-    }
+      Uint32 i = (x + y * p->width) * 4;
+      Uint32 color_value = p->palette[color];
+      
+      if(color_value != layer->pixels[i]) {
+          layer->pixels[i] = color_value >> 12;
+          layer->pixels[i+1] = color_value >> 8 & 0xff;
+          layer->pixels[i+2] = color_value >> 4 & 0xff;
+          layer->pixels[i+3] = color_value & 0xff;
+          layer->changed = 1;
+      }
   }
 }
 
@@ -124,6 +158,7 @@ Uint8 screen_dei(Device *d, Uint8 port)
 
 void
 screen_deo(Device *d, Uint8 port) {
+    //fprintf(stderr, "screen_deo(), port=%0x\n", port);
     if(port == 0xe) {
         Uint16 x,y;
         Uint8 layerIndex = d->dat[0xe] & 0x40;
@@ -133,6 +168,7 @@ screen_deo(Device *d, Uint8 port) {
         screen_write(&uxn_screen, &layer, x, y, d->dat[0xe] & 0x3);
         if(d->dat[0x6] & 0x01) DEVPOKE16(0x8, x + 1); /* auto x+1 */
         if(d->dat[0x6] & 0x02) DEVPOKE16(0xa, y + 1); /* auto y+1 */
+        fprintf(stderr,"in screen_deo() setting reqdraw=1\n");
         reqdraw = 1;
     }
 }
@@ -199,7 +235,7 @@ datetime_talk(Device *d, Uint8 b0, Uint8 w) {
 */
 
 // copied from uxn/src/devices/screen.c
-void
+/*void
 screen_palette(UxnScreen *p, Uint8 *addr)
 {
     int i, shift;
@@ -212,6 +248,11 @@ screen_palette(UxnScreen *p, Uint8 *addr)
         p->palette[i] |= p->palette[i] << 4;
     }
     p->fg.changed = p->bg.changed = 1;
+}*/
+void
+set_palette(UxnScreen *p, Device *d, Uint8 port)
+{
+    p->palette[port-0x8] = d->dat[port] << 16 | d->dat[port+1];
 }
 
 // TODO refactor system_deo_special() into uxn/src/devices/screen.c?
@@ -220,7 +261,7 @@ screen_palette(UxnScreen *p, Uint8 *addr)
 void system_deo_special(Device *d, Uint8 port)
 {
     if(port > 0x7 && port < 0xe)
-        screen_palette(&uxn_screen, &d->dat[0x8]);
+        set_palette(&uxn_screen, d, port);
 }
 
 // TODO refactor nil_dei() and nil_deo() from uxn/src/uxnmenu.c to uxn/src/devices/something.c?
@@ -266,8 +307,7 @@ uxnapp_init(void) {
 
     devsystem = uxn_port(u, 0x0, system_dei, system_deo);
     uxn_port(u, 0x1, nil_dei, console_deo);
-    //devscreen =
-    uxn_port(u, 0x2, /*screen_dei*/ screen_dei, screen_deo);
+    devscreen = uxn_port(u, 0x2, /*screen_dei*/ screen_dei, screen_deo);
     //devaudio0 = portuxn(u, 0x3, "audio0", audio_talk);
     uxn_port(u, 0x3, nil_dei, nil_deo);
     //portuxn(u, 0x4, "audio1", audio_talk);
@@ -295,6 +335,8 @@ uxnapp_init(void) {
     //portuxn(u, 0xf, "---", nil_talk);
     uxn_port(u, 0xe, nil_dei, nil_deo);
 
+    devsystem->dat[0x2] = uxn_screen.width * 8;
+    devsystem->dat[0x4] = uxn_screen.height * 8;
 //    mempoke16(devscreen->dat, 2, uxn_screen.hor * 8);
 //    mempoke16(devscreen->dat, 4, uxn_screen.ver * 8);
 
@@ -306,15 +348,22 @@ uxnapp_init(void) {
 void
 uxnapp_deinit(void) {
     PlatformAudioCloseOutput();
-    //PlatformFree(uxn_screen.bg.pixels);
-    //PlatformFree(uxn_screen.fg.pixels);
+    if (uxn_screen.bg.pixels != NULL) PlatformFree(uxn_screen.bg.pixels);
+    uxn_screen.bg.pixels = NULL;
+    if (uxn_screen.fg.pixels != NULL) PlatformFree(uxn_screen.fg.pixels);
+    uxn_screen.fg.pixels = NULL;
+    /*
+    if (uxn_screen.pixels != NULL) PlatformFree(uxn_screen.pixels);
+    uxn_screen.pixels = NULL;
+*/
 }
 
 
 void
 uxnapp_runloop(void) {
     Uxn* u = &_uxn;
-    uxn_eval(u, PAGE_PROGRAM);
+    uxn_eval(u, devscreen->dat[0x0]); // callback that something has changed
+    //uxn_eval(u, PAGE_PROGRAM);
     if(reqdraw || devsystem->dat[0xe]) // request draw || debug mode ( system 0xe set )
         redraw(u);
 }

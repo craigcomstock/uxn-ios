@@ -140,6 +140,10 @@
 
 - (id<MTLTexture>)makeTexture {
     MTLTextureDescriptor* textureDescriptor = [[MTLTextureDescriptor alloc] init];
+    /*
+     Ordinary format with four 8-bit normalized unsigned integer components in BGRA order.
+     https://developer.apple.com/documentation/metal/mtlpixelformat/mtlpixelformatbgra8unorm
+     */
     textureDescriptor.pixelFormat = MTLPixelFormatBGRA8Unorm;
     textureDescriptor.width = _viewportSize.x;
     textureDescriptor.height = _viewportSize.y;
@@ -148,9 +152,9 @@
 }
 
 - (void)updateTextures {
-    if(Platform.sharedPlatform.bgPixels != NULL)
+    //if(Platform.sharedPlatform.bgPixels != NULL)
         [self updateTexture:self.backgroundTexture withData:Platform.sharedPlatform.bgPixels];
-    if(Platform.sharedPlatform.fgPixels != NULL)
+    //if(Platform.sharedPlatform.fgPixels != NULL)
         [self updateTexture:self.foregroundTexture withData:Platform.sharedPlatform.fgPixels];
 }
 

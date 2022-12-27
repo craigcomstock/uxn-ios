@@ -6,20 +6,26 @@
 |0100
 ( set system colors )
 
-      #2ce9 .System/r DEO2
-      #01c0 .System/g DEO2
-      #2ce5 .System/b DEO2
+#2ce9 .System/r DEO2
+#01c0 .System/g DEO2
+#2ce5 .System/b DEO2
+
 #0000 .Screen/x DEO2
 #0000 .Screen/y DEO2
 #40 .Screen/pixel DEO
+
 #0003 .Screen/x DEO2
 #41 .Screen/pixel DEO
+
 #0005 .Screen/x DEO2
 #42 .Screen/pixel DEO
+
 #0007 .Screen/x DEO2
 #43 .Screen/pixel DEO
 
 #0009 .Screen/x DEO2
 #03 .Screen/pixel DEO
+
+( do I need a BRK or JMPr2 here? - seems an infinite loop is present? )
 
 BRK

@@ -64,8 +64,8 @@ uxn_eval(Uxn *u, Uint16 pc)
 		}
 		/* Short Mode */
 		bs = instr & 0x20 ? 1 : 0;
-        //fprintf(stderr, "device, a>>4=%d\n", a>>4);
-		switch(instr & 0x1f) {
+        //fprintf(stderr,"uxn_eval(), instr & 0x1f=%0x\n", instr & 0x1f);
+        switch(instr & 0x1f) {
 		/* Stack */
 		case 0x00: /* LIT */ PEEK(a, pc) PUSH(src, a) pc += 1 + bs; break;
 		case 0x01: /* INC */ POP(a) PUSH(src, a + 1) break;
