@@ -67,6 +67,9 @@ void
 screen_clear(UxnScreen *p, Layer *layer)
 {
     Uint32 i, size = p->width * p->height * 4;
+    /*
+     pretty pattern:
+     
     Uint32 x,y;
     for(x=0; x<p->width; x++) {
         for(y=0; y<p->height; y++) {
@@ -76,24 +79,12 @@ screen_clear(UxnScreen *p, Layer *layer)
             layer->pixels[loc+2] = x & 0xff; // red
             layer->pixels[loc+3] = 0x0; // alpha (transparency)
         }
-    }
-    /*
-    for(i = 0; i < size; i+=4)
+    }*/
+    
+    for(i = 0; i < size; i++)
     {
-        Uint32 value = (0xffffffff / size) * i * 3/4;
-        //fprintf(stderr,"%0x\n", value);
-        Uint8 b,g,r,a; // b, g, r, a
-        b=(value >> 12); // 11223344 -> 00000011
-        g=(value >> 8) & 0xff; // 11223344 -> 00000022
-        r=(value >> 4) & 0xff;
-        a=0x0;
-        //a=(value) & 0xff;
-        layer->pixels[i] = b;
-        layer->pixels[i+1] = g;
-        layer->pixels[i+2] = r;
-        layer->pixels[i+3] = a;
+        layer->pixels[i] = 0x0; // bgra - blue green red alpha, so maybe empty and transparent?
     }
- */
     layer->changed = 1;
 }
 
