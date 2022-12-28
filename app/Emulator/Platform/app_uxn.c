@@ -78,7 +78,7 @@ screen_rainbow(UxnScreen *p, Layer *layer)
         for(y=0; y<p->height; y++) {
             Uint32 loc = (y*p->width + x) *4;
             layer->pixels[loc] = y & 0xff; // blue
-            layer->pixels[loc+1] = y & 0xff; // green
+            layer->pixels[loc+1] = x & 0xff; // green
             layer->pixels[loc+2] = x & 0xff; // red
             layer->pixels[loc+3] = 0x0; // alpha (transparency)
         }
@@ -136,7 +136,7 @@ screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
     if(bg && fg /* && pixels */) {
         p->width = width;
         p->height = height;
-        screen_clear(p, &p->bg);
+        screen_rainbow(p, &p->bg);
         screen_clear(p, &p->fg);
     }
 }
