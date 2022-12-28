@@ -20,6 +20,13 @@ static Device *devsystem, *devscreen;
 //*devscreen, *devmouse, *devaudio0;
 static Uint8 reqdraw = 0;
 
+// copied from uxn/src/devices/screen.c
+static Uint8 blending[5][16] = {
+    {0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
+    {0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
+    {1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
+    {2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2},
+    {1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0}};
 
 static void
 redraw(Uxn *u) {
@@ -61,6 +68,21 @@ console_deo(Device *d, Uint8 port) {
     //if (port == 0x8) {
     //    fputc(d->dat[port], stdout);
    // }
+}
+
+void
+screen_rainbow(UxnScreen *p, Layer *layer)
+{
+    Uint32 x,y;
+    for(x=0; x<p->width; x++) {
+        for(y=0; y<p->height; y++) {
+            Uint32 loc = (y*p->width + x) *4;
+            layer->pixels[loc] = y & 0xff; // blue
+            layer->pixels[loc+1] = y & 0xff; // green
+            layer->pixels[loc+2] = x & 0xff; // red
+            layer->pixels[loc+3] = 0x0; // alpha (transparency)
+        }
+    }
 }
 
 void
@@ -122,19 +144,42 @@ screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 static void
 screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 {
-  if(x < p->width && y < p->height) {
-      Uint32 i = (x + y * p->width) * 4;
-      Uint32 color_value = p->palette[color];
-      
-      if(color_value != layer->pixels[i]) {
+    if(x < p->width && y < p->height) {
+        Uint32 i = (x + y * p->width) * 4;
+        Uint32 color_value = p->palette[color];
+        if(color_value != (layer->pixels[i]<<12) +
+           (layer->pixels[i+1]<<8) +
+           (layer->pixels[i+2]<<4) +
+           (layer->pixels[i+3])) {
           layer->pixels[i] = color_value >> 12;
           layer->pixels[i+1] = color_value >> 8 & 0xff;
           layer->pixels[i+2] = color_value >> 4 & 0xff;
           layer->pixels[i+3] = color_value & 0xff;
           layer->changed = 1;
-      }
+        } else {
+            fprintf(stderr, "screen_write() already written that color to coordinate\n");
+        }
   }
 }
+
+static void
+screen_blit(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy, Uint8 twobpp)
+{
+    int v, h, opaque = blending[4][color];
+    for(v = 0; v < 8; v++) {
+        Uint16 c = sprite[v] | (twobpp ? sprite[v + 8] : 0) << 8;
+        for(h = 7; h >= 0; --h, c >>= 1) {
+            Uint8 ch = (c & 1) | ((c >> 7) & 2);
+            if(opaque || ch)
+                screen_write(p,
+                    layer,
+                    x + (flipx ? 7 - h : h),
+                    y + (flipy ? 7 - v : v),
+                    blending[ch][color]);
+        }
+    }
+}
+
 
 Uint8 screen_dei(Device *d, Uint8 port)
 {
@@ -149,18 +194,42 @@ Uint8 screen_dei(Device *d, Uint8 port)
 
 void
 screen_deo(Device *d, Uint8 port) {
-    //fprintf(stderr, "screen_deo(), port=%0x\n", port);
-    if(port == 0xe) {
-        Uint16 x,y;
-        Uint8 layerIndex = d->dat[0xe] & 0x40;
-        DEVPEEK16(x, 0x8);
-        DEVPEEK16(y, 0xa);
-        Layer layer = *(layerIndex ? &uxn_screen.fg : &uxn_screen.bg);
-        screen_write(&uxn_screen, &layer, x, y, d->dat[0xe] & 0x3);
-        if(d->dat[0x6] & 0x01) DEVPOKE16(0x8, x + 1); /* auto x+1 */
-        if(d->dat[0x6] & 0x02) DEVPOKE16(0xa, y + 1); /* auto y+1 */
-        fprintf(stderr,"in screen_deo() setting reqdraw=1\n");
-        reqdraw = 1;
+    fprintf(stderr, "screen_deo(), port=%0x\n", port);
+    switch(port) {
+        case 0xe: {
+            Uint16 x,y;
+            Uint8 layerIndex = d->dat[0xe] & 0x40;
+            DEVPEEK16(x, 0x8);
+            DEVPEEK16(y, 0xa);
+            Layer layer = *(layerIndex ? &uxn_screen.fg : &uxn_screen.bg);
+            screen_write(&uxn_screen, &layer, x, y, d->dat[0xe] & 0x3);
+            if(d->dat[0x6] & 0x01) DEVPOKE16(0x8, x + 1); /* auto x+1 */
+            if(d->dat[0x6] & 0x02) DEVPOKE16(0xa, y + 1); /* auto y+1 */
+            fprintf(stderr,"in screen_deo() setting reqdraw=1\n");
+            reqdraw = 1;
+            break;
+        }
+        case 0xf: {
+            Uint16 x, y, dx, dy, addr;
+            Uint8 i, n, twobpp = !!(d->dat[0xf] & 0x80);
+            Layer *layer = (d->dat[0xf] & 0x40) ? &uxn_screen.fg : &uxn_screen.bg;
+            DEVPEEK16(x, 0x8);
+            DEVPEEK16(y, 0xa);
+            DEVPEEK16(addr, 0xc);
+            n = d->dat[0x6] >> 4;
+            dx = (d->dat[0x6] & 0x01) << 3;
+            dy = (d->dat[0x6] & 0x02) << 2;
+            if(addr > 0x10000 - ((n + 1) << (3 + twobpp)))
+                return;
+            for(i = 0; i <= n; i++) {
+                screen_blit(&uxn_screen, layer, x + dy * i, y + dx * i, &d->u->ram[addr], d->dat[0xf] & 0xf, d->dat[0xf] & 0x10, d->dat[0xf] & 0x20, twobpp);
+                addr += (d->dat[0x6] & 0x04) << (1 + twobpp);
+            }
+            DEVPOKE16(0xc, addr);   /* auto addr+length */
+            DEVPOKE16(0x8, x + dx); /* auto x+8 */
+            DEVPOKE16(0xa, y + dy); /* auto y+8 */
+            break;
+        }
     }
 }
 
