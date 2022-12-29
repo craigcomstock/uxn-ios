@@ -86,7 +86,7 @@ screen_rainbow(UxnScreen *p, Layer *layer)
 }
 
 void
-screen_clear(UxnScreen *p, Layer *layer)
+screen_fill(UxnScreen *p, Layer *layer, Uint8 value)
 {
     Uint32 i, size = p->width * p->height * 4;
     /*
@@ -105,7 +105,7 @@ screen_clear(UxnScreen *p, Layer *layer)
     
     for(i = 0; i < size; i++)
     {
-        layer->pixels[i] = 0x0; // bgra - blue green red alpha, so maybe empty and transparent?
+        layer->pixels[i] = value; // bgra - blue green red alpha, so maybe empty and transparent?
     }
     layer->changed = 1;
 }
@@ -136,8 +136,8 @@ screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
     if(bg && fg /* && pixels */) {
         p->width = width;
         p->height = height;
-        screen_rainbow(p, &p->bg);
-        screen_clear(p, &p->fg);
+        screen_fill(p, &p->bg, 0xff); // white/opaque background
+        screen_fill(p, &p->fg, 0x00); // clear/black foreground
     }
 }
 
@@ -315,13 +315,29 @@ set_palette(UxnScreen *p, Device *d, Uint8 port)
     p->palette[port-0x8] = d->dat[port] << 16 | d->dat[port+1];
 }
 
+// copied from uxn/src/devices/screen.c
+void
+screen_palette(UxnScreen *p, Uint8 *addr)
+{
+    int i, shift;
+    for(i = 0, shift = 4; i < 4; ++i, shift ^= 4) {
+        Uint8
+            r = (addr[0 + i / 2] >> shift) & 0x0f,
+            g = (addr[2 + i / 2] >> shift) & 0x0f,
+            b = (addr[4 + i / 2] >> shift) & 0x0f;
+        p->palette[i] = 0x0f000000 | r << 16 | g << 8 | b;
+        p->palette[i] |= p->palette[i] << 4;
+    }
+    p->fg.changed = p->bg.changed = 1;
+}
+
 // TODO refactor system_deo_special() into uxn/src/devices/screen.c?
 // copied from uxn/src/uxnemu.c (SDL emulator)
 // screen_palette is in uxn/src/devices/screen.c so port independent
 void system_deo_special(Device *d, Uint8 port)
 {
     if(port > 0x7 && port < 0xe)
-        set_palette(&uxn_screen, d, port);
+            screen_palette(&uxn_screen, &d->dat[0x8]);
 }
 
 // TODO refactor nil_dei() and nil_deo() from uxn/src/uxnmenu.c to uxn/src/devices/something.c?
