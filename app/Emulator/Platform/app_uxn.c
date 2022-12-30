@@ -6,7 +6,8 @@
 #include "uxn.h"
 
 #include "devices/system.c"
-#include "devices/screen.h"
+//#include "devices/screen.h"
+#include "devices/screen.c"
 //#include "devices/audio.c"
 #if DEBUG
 #include "uxn.c"
@@ -21,12 +22,14 @@ static Device *devsystem, *devscreen;
 static Uint8 reqdraw = 0;
 
 // copied from uxn/src/devices/screen.c
+/*
 static Uint8 blending[5][16] = {
     {0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
     {0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
     {1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
     {2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2},
     {1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0}};
+*/
 
 static void
 redraw(Uxn *u) {
@@ -111,7 +114,7 @@ screen_fill(UxnScreen *p, Layer *layer, Uint8 value)
 }
 
 void
-screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
+xscreen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 {
     // I get an EXC_BAD_ACCESS in Platform.m - (void)setBackgroundPixels:(void *)pixels {
     //CGSize canvasSize = self.canvasSize;
@@ -142,7 +145,7 @@ screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 }
 
 static void
-screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
+xscreen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 {
     if(x < p->width && y < p->height) {
         Uint32 i = (x + y * p->width) * 4;
@@ -163,7 +166,7 @@ screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 }
 
 static void
-screen_blit(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy, Uint8 twobpp)
+xscreen_blit(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy, Uint8 twobpp)
 {
     int v, h, opaque = blending[4][color];
     for(v = 0; v < 8; v++) {
@@ -181,7 +184,7 @@ screen_blit(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8
 }
 
 
-Uint8 screen_dei(Device *d, Uint8 port)
+Uint8 xscreen_dei(Device *d, Uint8 port)
 {
     switch(port) {
         case 0x2: return uxn_screen.width >> 8;
@@ -193,7 +196,7 @@ Uint8 screen_dei(Device *d, Uint8 port)
 }
 
 void
-screen_deo(Device *d, Uint8 port) {
+xscreen_deo(Device *d, Uint8 port) {
     fprintf(stderr, "screen_deo(), port=%0x\n", port);
     switch(port) {
         case 0xe: {
@@ -317,7 +320,7 @@ set_palette(UxnScreen *p, Device *d, Uint8 port)
 
 // copied from uxn/src/devices/screen.c
 void
-screen_palette(UxnScreen *p, Uint8 *addr)
+xscreen_palette(UxnScreen *p, Uint8 *addr)
 {
     int i, shift;
     for(i = 0, shift = 4; i < 4; ++i, shift ^= 4) {
