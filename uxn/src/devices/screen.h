@@ -17,8 +17,7 @@ typedef struct Layer {
 } Layer;
 
 typedef struct UxnScreen {
-    Uint32 palette[4];
-    Uint8 *pixels;
+	Uint32 palette[4], *pixels;
 	Uint16 width, height;
 	Layer fg, bg;
 	Uint8 mono;

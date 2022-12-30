@@ -64,8 +64,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		}
 		/* Short Mode */
 		bs = instr & 0x20 ? 1 : 0;
-        //fprintf(stderr,"uxn_eval(), instr & 0x1f=%0x\n", instr & 0x1f);
-        switch(instr & 0x1f) {
+		switch(instr & 0x1f) {
 		/* Stack */
 		case 0x00: /* LIT */ PEEK(a, pc) PUSH(src, a) pc += 1 + bs; break;
 		case 0x01: /* INC */ POP(a) PUSH(src, a + 1) break;
@@ -119,13 +118,11 @@ timeout:
 int
 uxn_boot(Uxn *u, Uint8 *ram)
 {
-//    fprintf(stderr,"uxn_boot()\n");
 	Uint32 i;
 	char *cptr = (char *)u;
 	for(i = 0; i < sizeof(*u); i++)
 		cptr[i] = 0x00;
 	u->ram = ram;
-//    fprintf(stderr,"uxn_boot() loaded %d ram\n", i);
 	return 1;
 }
 
