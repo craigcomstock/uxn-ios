@@ -45,8 +45,9 @@ redraw(Uxn *u) {
     u16 width, height;
     PlatformGetScreenSize(&width, &height);
     if (width != uxn_screen.width || height != uxn_screen.height) {
+        fprintf(stderr,"in redraw() needed to change screen from %d by %d to %d by %d\n",
+                width, height, uxn_screen.width, uxn_screen.height);
         PlatformSetScreenSize(uxn_screen.width, uxn_screen.height);
-        // setFrame()?
     }
     PlatformBitmap bg = {
         .width = uxn_screen.width,
