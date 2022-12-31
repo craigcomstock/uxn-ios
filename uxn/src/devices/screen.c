@@ -65,7 +65,7 @@ screen_palette(UxnScreen *p, Uint8 *addr)
 }
 // refactor, ios needs to do this a different way
 void
-xscreen_resize(UxnScreen *p, Uint16 width, Uint16 height)
+screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 {
     // seeing heap-buffer-overflow later on these allocations, background in this case
     int layer_size = 4 * width * height;

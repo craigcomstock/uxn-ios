@@ -42,6 +42,12 @@ redraw(Uxn *u) {
     // but probably makes more sense to over-ride screen_write and just write directly to each fg/bg layer and'
     // skip allocating the higher-level uxn_screen.pixels altogether as
     // it is not needed due to ios supporting two layers.
+    u16 width, height;
+    PlatformGetScreenSize(&width, &height);
+    if (width != uxn_screen.width || height != uxn_screen.height) {
+        PlatformSetScreenSize(uxn_screen.width, uxn_screen.height);
+        // setFrame()?
+    }
     PlatformBitmap bg = {
         .width = uxn_screen.width,
         .height = uxn_screen.height,
@@ -117,7 +123,7 @@ screen_fill(UxnScreen *p, Layer *layer, Uint8 value)
 }
 
 void
-screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
+xscreen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 {
     // I get an EXC_BAD_ACCESS in Platform.m - (void)setBackgroundPixels:(void *)pixels {
     PlatformSetScreenSize(width, height);

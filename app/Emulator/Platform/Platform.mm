@@ -35,6 +35,7 @@ PlatformSetScreenSize(u16 width, u16 height) {
     size.height = height;
     fprintf(stderr, "PlatformSetScreenSize(), width=%d, height=%d\n", width, height);
     [Platform.sharedPlatform setCanvasSize:size];
+    
 }
 
 void

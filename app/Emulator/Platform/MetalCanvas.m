@@ -20,6 +20,15 @@
 
 @implementation MetalCanvas
 
+// from https://developer.apple.com/documentation/uikit/uiview which is a parent of MtkView seen in MetalCanvas.h
+/*
+ Configuring the bounds and frame rectangles
+ var frame: CGRect
+ The frame rectangle, which describes the view’s location and size in its superview’s coordinate system.
+ var bounds: CGRect
+ The bounds rectangle, which describes the view’s location and size in its own coordinate system.
+ */
+// TODO how to change the frame/view/size when screen_resize() is called? How did it work before?
 - (void)setFrame:(CGRect)frame {
     [super setFrame:frame];
     
@@ -100,7 +109,14 @@
 
 - (void)setDevice:(id<MTLDevice>)device {
     [super setDevice:device];
-
+    u16 width, height;
+    // TODO, here, viewportsize is set, maketexture is called, but how to get size from platform canvas size?
+    PlatformGetScreenSize(&width, &height);
+    if (_viewportSize.x != width || _viewportSize.y != height) {
+        _viewportSize.x = width;
+        _viewportSize.y = height;
+    }
+    
     self.backgroundTexture = [self makeTexture];
     self.foregroundTexture = [self makeTexture];
     
@@ -164,7 +180,7 @@
 
     NSUInteger bytesPerRow = 4 * _viewportSize.x;
     const void* pixels = data.bytes;
-    
+    // EXC_BAD_ACCESS here because the viewportsize is bigger than changed canvas size in Platform.mm
     [texture replaceRegion:region mipmapLevel:0 withBytes:pixels bytesPerRow:bytesPerRow];
 }
 
