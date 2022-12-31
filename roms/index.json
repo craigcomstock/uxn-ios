@@ -3,6 +3,7 @@
         "section": "",
         "roms": [
             {"file": "blank.rom", "description": "a blank file"},
+            {"file": "clock.rom", "description": "clock"},
             {"file": "launcher.rom", "description": "launcher"},
             {"file": "left.rom", "description": "left text editor"}
         ]

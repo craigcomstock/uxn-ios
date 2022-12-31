@@ -6,8 +6,8 @@
 #include "uxn.h"
 
 #include "devices/system.c"
-//#include "devices/screen.h"
 #include "devices/screen.c"
+#include "devices/datetime.c"
 //#include "devices/audio.c"
 #if DEBUG
 #include "uxn.c"
@@ -18,18 +18,8 @@
 static Uxn _uxn;
 UxnScreen uxn_screen;
 static Device *devsystem, *devscreen;
-//*devscreen, *devmouse, *devaudio0;
+//*devmouse, *devaudio0;
 static Uint8 reqdraw = 0;
-
-// copied from uxn/src/devices/screen.c
-/*
-static Uint8 blending[5][16] = {
-    {0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
-    {0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
-    {1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
-    {2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2},
-    {1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0}};
-*/
 
 static void
 redraw(Uxn *u) {
@@ -66,35 +56,16 @@ redraw(Uxn *u) {
     reqdraw = 0;
 }
 
+// copied from uxn/src/uxnemu.c
 static void
 console_deo(Device *d, Uint8 port) {
-    // copied from uxn/src/uxnemu.c
     //fprintf(stderr, "console_deo(device=%p, port=%d)\n", d, port);
     FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr : 0;
-    //fprintf(stderr, "fd=%d\n");
     // can't be if (fd) because stdout/stderr can be 0 or 1 instead of NULL
     
     if(fd != NULL) {
         fputc(d->dat[port], fd);
         fflush(fd);
-    }
-    //if (port == 0x8) {
-    //    fputc(d->dat[port], stdout);
-   // }
-}
-
-void
-screen_rainbow(UxnScreen *p, Layer *layer)
-{
-    Uint32 x,y;
-    for(x=0; x<p->width; x++) {
-        for(y=0; y<p->height; y++) {
-            Uint32 loc = (y*p->width + x) *4;
-            layer->pixels[loc] = y & 0xff; // blue
-            layer->pixels[loc+1] = x & 0xff; // green
-            layer->pixels[loc+2] = x & 0xff; // red
-            layer->pixels[loc+3] = 0x0; // alpha (transparency)
-        }
     }
 }
 
@@ -291,23 +262,6 @@ audio_talk(Device *d, Uint8 b0, Uint8 w) {
         PlatformAudioOpenOutput();
     }
 }
-
-
-static void
-datetime_talk(Device *d, Uint8 b0, Uint8 w) {
-    time_t seconds = time(NULL);
-    struct tm *t = localtime(&seconds);
-    t->tm_year += 1900;
-    mempoke16(d->dat, 0x0, t->tm_year);
-    d->dat[0x2] = t->tm_mon;
-    d->dat[0x3] = t->tm_mday;
-    d->dat[0x4] = t->tm_hour;
-    d->dat[0x5] = t->tm_min;
-    d->dat[0x6] = t->tm_sec;
-    d->dat[0x7] = t->tm_wday;
-    mempoke16(d->dat, 0x08, t->tm_yday);
-    d->dat[0xa] = t->tm_isdst;
-}
 */
 
 // copied from uxn/src/devices/screen.c
@@ -325,6 +279,7 @@ screen_palette(UxnScreen *p, Uint8 *addr)
     }
     p->fg.changed = p->bg.changed = 1;
 }*/
+
 void
 set_palette(UxnScreen *p, Device *d, Uint8 port)
 {
@@ -399,7 +354,7 @@ uxnapp_init(void) {
 
     devsystem = uxn_port(u, 0x0, system_dei, system_deo);
     uxn_port(u, 0x1, nil_dei, console_deo);
-    devscreen = uxn_port(u, 0x2, /*screen_dei*/ screen_dei, screen_deo);
+    devscreen = uxn_port(u, 0x2, screen_dei, screen_deo);
     //devaudio0 = portuxn(u, 0x3, "audio0", audio_talk);
     uxn_port(u, 0x3, nil_dei, nil_deo);
     //portuxn(u, 0x4, "audio1", audio_talk);
@@ -416,21 +371,14 @@ uxnapp_init(void) {
     uxn_port(u, 0x9, nil_dei, nil_deo);
     //portuxn(u, 0xa, "file", file_talk);
     uxn_port(u, 0xa, nil_dei, nil_deo);
-    //portuxn(u, 0xb, "datetime", datetime_talk);
-    uxn_port(u, 0xa, nil_dei, nil_deo);
-    //portuxn(u, 0xc, "---", nil_talk);
     uxn_port(u, 0xb, nil_dei, nil_deo);
-    //portuxn(u, 0xd, "---", nil_talk);
-    uxn_port(u, 0xc, nil_dei, nil_deo);
-    //portuxn(u, 0xe, "---", nil_talk);
+    uxn_port(u, 0xc, datetime_dei, nil_deo);
     uxn_port(u, 0xd, nil_dei, nil_deo);
-    //portuxn(u, 0xf, "---", nil_talk);
     uxn_port(u, 0xe, nil_dei, nil_deo);
+    uxn_port(u, 0xf, nil_dei, nil_deo);
 
     devsystem->dat[0x2] = uxn_screen.width * 8;
     devsystem->dat[0x4] = uxn_screen.height * 8;
-//    mempoke16(devscreen->dat, 2, uxn_screen.hor * 8);
-//    mempoke16(devscreen->dat, 4, uxn_screen.ver * 8);
 
     uxn_eval(u, PAGE_PROGRAM);
     redraw(u);
@@ -444,10 +392,6 @@ uxnapp_deinit(void) {
     uxn_screen.bg.pixels = NULL;
     if (uxn_screen.fg.pixels != NULL) PlatformFree(uxn_screen.fg.pixels);
     uxn_screen.fg.pixels = NULL;
-    /*
-    if (uxn_screen.pixels != NULL) PlatformFree(uxn_screen.pixels);
-    uxn_screen.pixels = NULL;
-*/
 }
 
 
@@ -455,7 +399,6 @@ void
 uxnapp_runloop(void) {
     Uxn* u = &_uxn;
     uxn_eval(u, devscreen->dat[0x0]); // callback that something has changed
-    //uxn_eval(u, PAGE_PROGRAM);
     if(reqdraw || devsystem->dat[0xe]) // request draw || debug mode ( system 0xe set )
         redraw(u);
 }
