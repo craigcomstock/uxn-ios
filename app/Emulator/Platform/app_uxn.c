@@ -38,7 +38,10 @@ redraw(Uxn *u) {
     //if(devsystem->dat[0xe]) {
     //    inspect(&uxn_screen, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
     //}
-    
+    // TODO here, we might call screen_redraw() to translate fg/bg 2-bit pixels to palette-based 8-bit pixels
+    // but probably makes more sense to over-ride screen_write and just write directly to each fg/bg layer and'
+    // skip allocating the higher-level uxn_screen.pixels altogether as
+    // it is not needed due to ios supporting two layers.
     PlatformBitmap bg = {
         .width = uxn_screen.width,
         .height = uxn_screen.height,
@@ -114,9 +117,10 @@ screen_fill(UxnScreen *p, Layer *layer, Uint8 value)
 }
 
 void
-xscreen_resize(UxnScreen *p, Uint16 width, Uint16 height)
+screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 {
     // I get an EXC_BAD_ACCESS in Platform.m - (void)setBackgroundPixels:(void *)pixels {
+    PlatformSetScreenSize(width, height);
     //CGSize canvasSize = self.canvasSize;
     //NSUInteger count = 4 * canvasSize.width * canvasSize.height;
   //  self.bgPixels = [NSData dataWithBytes:pixels length:count];
@@ -125,15 +129,17 @@ xscreen_resize(UxnScreen *p, Uint16 width, Uint16 height)
     if (p->bg.pixels != NULL) free(p->bg.pixels);
     if (p->fg.pixels != NULL) free(p->fg.pixels);
     /* if (p->pixels != NULL) free(p->pixels); */
+    int size = 4 * width * height;
     Uint8
-        *bg = malloc(4 * width * height),
-        *fg = malloc(4 * width * height);
+        *bg = malloc(size),
+        *fg = malloc(size);
     //Uint32
     //    *pixels = malloc(4 * width * height * sizeof(Uint32));
     if(bg) p->bg.pixels = bg;
     if(fg) p->fg.pixels = fg;
     //if(pixels) p->pixels = pixels;
-    fprintf(stderr,"p->bg.pixels=%p, p->fg.pixels=%p\n",
+    fprintf(stderr,"screen_resize(), size=%d, p->bg.pixels=%p, p->fg.pixels=%p\n",
+            size,
              p->bg.pixels, p->fg.pixels /*, p->pixels */);
     /* p->pixels=%p\n",*/
     if(bg && fg /* && pixels */) {
@@ -144,8 +150,8 @@ xscreen_resize(UxnScreen *p, Uint16 width, Uint16 height)
     }
 }
 
-static void
-xscreen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
+void
+screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 {
     if(x < p->width && y < p->height) {
         Uint32 i = (x + y * p->width) * 4;

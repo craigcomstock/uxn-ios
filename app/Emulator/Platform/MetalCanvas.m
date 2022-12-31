@@ -152,17 +152,11 @@
 }
 
 - (void)updateTextures {
-    //if(Platform.sharedPlatform.bgPixels != NULL)
-        [self updateTexture:self.backgroundTexture withData:Platform.sharedPlatform.bgPixels];
-    //if(Platform.sharedPlatform.fgPixels != NULL)
-        [self updateTexture:self.foregroundTexture withData:Platform.sharedPlatform.fgPixels];
+    [self updateTexture:self.backgroundTexture withData:Platform.sharedPlatform.bgPixels];
+    [self updateTexture:self.foregroundTexture withData:Platform.sharedPlatform.fgPixels];
 }
 
 - (void)updateTexture:(id<MTLTexture>)texture withData:(NSData*)data {
-    /*if(data == NULL) {
-        fprintf(stderr, "oops, updateTexture() got NULL data\n");
-        return;
-    }*/
     MTLRegion region = {
         {0, 0, 0},
         {_viewportSize.x, _viewportSize.y, 1}
@@ -170,7 +164,7 @@
 
     NSUInteger bytesPerRow = 4 * _viewportSize.x;
     const void* pixels = data.bytes;
-
+    
     [texture replaceRegion:region mipmapLevel:0 withBytes:pixels bytesPerRow:bytesPerRow];
 }
 
