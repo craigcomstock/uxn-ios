@@ -21,12 +21,12 @@ void
 uxnapp_setdebug(u8 debug);
 
 
-//void
-//uxnapp_movemouse(i16 x, i16 y);
+void
+uxnapp_movemouse(i16 x, i16 y);
 
 
-//void
-//uxnapp_setmousebutton(u8 button, u8 state);
+void
+uxnapp_setmousebutton(u8 button, u8 state);
 
 
 //void

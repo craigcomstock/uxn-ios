@@ -17,7 +17,7 @@
 
 static Uxn _uxn;
 UxnScreen uxn_screen;
-static Device *devsystem, *devscreen;
+static Device *devsystem, *devscreen, *devmouse;
 //*devmouse, *devaudio0;
 static Uint8 reqdraw = 0;
 
@@ -355,7 +355,7 @@ uxnapp_init(void) {
     devsystem = uxn_port(u, 0x0, system_dei, system_deo);
     uxn_port(u, 0x1, nil_dei, console_deo);
     devscreen = uxn_port(u, 0x2, screen_dei, screen_deo);
-    //devaudio0 = portuxn(u, 0x3, "audio0", audio_talk);
+    //devaudio0 = uxn_port(u, 0x3, nil_dei, audio_deo);
     uxn_port(u, 0x3, nil_dei, nil_deo);
     //portuxn(u, 0x4, "audio1", audio_talk);
     uxn_port(u, 0x4, nil_dei, nil_deo);
@@ -367,8 +367,7 @@ uxnapp_init(void) {
     uxn_port(u, 0x7, nil_dei, nil_deo);
     //portuxn(u, 0x8, "controller", nil_talk);
     uxn_port(u, 0x8, nil_dei, nil_deo);
-    //devmouse = portuxn(u, 0x9, "mouse", nil_talk);
-    uxn_port(u, 0x9, nil_dei, nil_deo);
+    devmouse = uxn_port(u, 0x9, nil_dei, nil_deo);
     //portuxn(u, 0xa, "file", file_talk);
     uxn_port(u, 0xa, nil_dei, nil_deo);
     uxn_port(u, 0xb, nil_dei, nil_deo);
@@ -411,23 +410,16 @@ uxnapp_setdebug(u8 debug) {
     redraw(u);
 }
 
-/*
-static int
-clamp(int val, int min, int max) {
-    return (val >= min) ? (val <= max) ? val : max : min;
-}
-
-
 void
 uxnapp_movemouse(i16 mx, i16 my) {
     Uxn* u = &_uxn;
 
-    Uint16 x = clamp(mx, 0, uxn_screen.hor * 8 - 1);
-    Uint16 y = clamp(my, 0, uxn_screen.ver * 8 - 1);
-    mempoke16(devmouse->dat, 0x2, x);
-    mempoke16(devmouse->dat, 0x4, y);
-
-    evaluxn(u, mempeek16(devmouse->dat, 0));
+    Uint16 x = clamp(mx, 0, uxn_screen.width * 8 - 1);
+    Uint16 y = clamp(my, 0, uxn_screen.height * 8 - 1);
+    Device *d = devmouse;
+    DEVPOKE16(0x2, x);
+    DEVPOKE16(0x4, y);
+    uxn_eval(u, GETVECTOR(d));
 }
 
 
@@ -448,10 +440,11 @@ uxnapp_setmousebutton(u8 button, u8 state) {
         devmouse->dat[6] &= (~flag);
     }
 
-    evaluxn(u, mempeek16(devmouse->dat, 0));
+    Device *d = devmouse;
+    uxn_eval(u, GETVECTOR(d));
 }
 
-
+/*
 void
 uxnapp_audio_callback(Uint8 *stream, Uint32 len) {
     int running = 0;
