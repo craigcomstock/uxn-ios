@@ -8,6 +8,7 @@
 #include "devices/system.c"
 #include "devices/screen.c"
 #include "devices/datetime.c"
+#include "devices/mouse.c"
 //#include "devices/audio.c"
 #if DEBUG
 #include "uxn.c"
@@ -16,9 +17,9 @@
 #endif
 
 static Uxn _uxn;
-UxnScreen uxn_screen;
+//UxnScreen uxn_screen; // over in screen.c
 static Device *devsystem, *devscreen, *devmouse;
-//*devmouse, *devaudio0;
+// *devaudio0;
 static Uint8 reqdraw = 0;
 
 static void
@@ -59,7 +60,7 @@ redraw(Uxn *u) {
 // copied from uxn/src/uxnemu.c
 static void
 console_deo(Device *d, Uint8 port) {
-    //fprintf(stderr, "console_deo(device=%p, port=%d)\n", d, port);
+    //fprintf(stderr, "console_deo(device=%p, port=%d, data=%c(%0x)\n", d, port, d->dat[port], d->dat[port]);
     FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr : 0;
     // can't be if (fd) because stdout/stderr can be 0 or 1 instead of NULL
     
@@ -397,7 +398,9 @@ uxnapp_deinit(void) {
 void
 uxnapp_runloop(void) {
     Uxn* u = &_uxn;
-    uxn_eval(u, devscreen->dat[0x0]); // callback that something has changed
+    // TODO should this function ALWAYS eval uxn on the screen vector?
+    // should call "frame" in mouseconsole.tal right?
+    uxn_eval(u, GETVECTOR(devscreen));
     if(reqdraw || devsystem->dat[0xe]) // request draw || debug mode ( system 0xe set )
         redraw(u);
 }
@@ -410,23 +413,19 @@ uxnapp_setdebug(u8 debug) {
     redraw(u);
 }
 
+// TODO mouse_scroll(devmouse, x, y);
 void
 uxnapp_movemouse(i16 mx, i16 my) {
-    Uxn* u = &_uxn;
-
+    fprintf(stderr,"uxnapp_movemouse()\n");
     Uint16 x = clamp(mx, 0, uxn_screen.width * 8 - 1);
     Uint16 y = clamp(my, 0, uxn_screen.height * 8 - 1);
-    Device *d = devmouse;
-    DEVPOKE16(0x2, x);
-    DEVPOKE16(0x4, y);
-    uxn_eval(u, GETVECTOR(d));
+    mouse_pos(devmouse, x, y);
 }
 
 
 void
 uxnapp_setmousebutton(u8 button, u8 state) {
-    Uxn* u = &_uxn;
-
+    fprintf(stderr,"uxnapp_setmousebutton()\n");
     Uint8 flag = 0x00;
     switch (button) {
         case 0: flag = 0x01; break;
@@ -434,14 +433,11 @@ uxnapp_setmousebutton(u8 button, u8 state) {
     }
 
     if (state) {
-        devmouse->dat[6] |= flag;
+        mouse_down(devmouse, flag);
     }
     else {
-        devmouse->dat[6] &= (~flag);
+        mouse_up(devmouse, flag);
     }
-
-    Device *d = devmouse;
-    uxn_eval(u, GETVECTOR(d));
 }
 
 /*

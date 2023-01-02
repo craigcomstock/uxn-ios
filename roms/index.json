@@ -2,7 +2,8 @@
     {
         "section": "",
         "roms": [
-            {"file": "projects/examples/devices/mouseconsole.rom", "description": "mouseconsole"},
+            {"file": "projects/examples/devices/mouseconsole.rom", "description": ""},
+            {"file": "projects/examples/devices/console.rom", "description": ""},
         ]
     },
     {

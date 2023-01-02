@@ -13,7 +13,7 @@ PlatformDelegateAppExit() {
     uxnapp_deinit();
 }
 
-
+// TODO should this callback cause a uxn_eval on the screen vector? in app_uxn?
 void
 PlatformDelegateAppRunloop() {
     uxnapp_runloop();

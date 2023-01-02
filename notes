@@ -36,3 +36,190 @@ PlatformCopyRom(buffer=0x7ff7b812f440, size=65280)
 
 ok! Hello Uxn! in console.tal works.
 I need to automate the reassembling of all the roms and proceed with adding back all the devices
+Mon Jan  2 12:36:53 CST 2023
+
+A
+AZ
+setBackgroundPixels(), canvas width=512.000000, height=320.000000, count=655360
+in redraw() set reqdraw=0
+M
+MZ
+M
+D
+DZ
+M
+G
+L
+LZ
+GZ
+M
+MZ
+
+in mouseconsole.tal
+
+an M is started but not finished and then called again!
+so GZ is not returning to LZ to M!?
+
+so on-mouse, exit
+then on-mouse, on-mouse-drag, draw-line, draw-line exit, on-mouse-drag exit
+but then on-mouse again!? what happened to the on-mouse exit after a mouse drag?
+Mon Jan  2 13:34:22 CST 2023
+
+A
+AZ
+setBackgroundPixels(), canvas width=512.000000, height=320.000000, count=655360
+in redraw() set reqdraw=0
+uxnapp_movemouse()
+M
+MZ
+uxnapp_setmousebutton()
+M
+D
+DZ
+uxnapp_movemouse()
+M
+G
+L
+LZ
+GZ
+uxnapp_movemouse()
+M
+G
+L
+LZ
+GZ
+uxnapp_setmousebutton()
+M
+MZ
+<wst> empty
+<rst> empty
+Halted: Return-stack underflow#00fb, at 0x0001
+
+so maybe movemouse needs to "wait" for previous eval to finish?
+Mon Jan  2 14:57:10 CST 2023
+
+uxnapp_movemouse()
+M
+G
+L
+LR
+GZ
+<wst> empty
+<rst> empty
+Halted: Return-stack underflow#00d0, at 0x0001
+
+happens at uxnapp_runloop, uxn_eval(u, devscreen->dat[0x0]); // notify that something changed
+Mon Jan  2 15:42:07 CST 2023
+
+uxnapp_setmousebutton()
+pc=351, instr=80
+pc=353, instr=80
+pc=355, instr=17
+Mpc=356, instr=80
+pc=358, instr=80
+pc=360, instr=17
+
+pc=361, instr=a0
+pc=364, instr=80
+pc=366, instr=37
+pc=367, instr=80
+pc=369, instr=30
+pc=370, instr=80
+pc=372, instr=37
+pc=373, instr=80
+pc=375, instr=30
+pc=376, instr=80
+pc=378, instr=37
+pc=379, instr=80
+pc=381, instr=80
+pc=383, instr=17
+pc=384, instr=80
+pc=386, instr=36
+pc=387, instr=26
+pc=388, instr=80
+pc=390, instr=31
+pc=391, instr=80
+pc=393, instr=37
+pc=394, instr=80
+pc=396, instr=36
+pc=397, instr=26
+pc=398, instr=80
+pc=400, instr=31
+pc=401, instr=80
+pc=403, instr=37
+pc=404, instr=80
+pc=406, instr=80
+pc=408, instr=16
+pc=409, instr=80
+pc=411, instr=9
+pc=412, instr=18
+pc=413, instr=80
+pc=415, instr=17
+pc=416, instr=80
+pc=418, instr=16
+pc=419, instr=80
+pc=421, instr=9
+pc=422, instr=80
+pc=424, instr=10
+pc=425, instr=80
+pc=427, instr=8
+pc=428, instr=1c
+pc=429, instr=80
+pc=431, instr=d
+pc=432, instr=80
+pc=434, instr=16
+pc=435, instr=80
+pc=437, instr=d
+pc=438, instr=80
+pc=440, instr=16
+pc=441, instr=80
+pc=443, instr=11
+pc=444, instr=80
+pc=446, instr=80
+pc=448, instr=17
+Mpc=449, instr=80
+pc=451, instr=80
+pc=453, instr=17
+Zpc=454, instr=80
+pc=456, instr=80
+pc=458, instr=17
+
+pc=2, instr=f9
+<wst> empty
+<rst> empty
+Halted: Return-stack underflow#00f9, at 0x0001
+
+so the data at ram[01] is random, was d0 now f9
+interesting that pc=2 though, that's "impossible?"
+what is below 0x100?
+
+		case 0x17: /* DEO */ POP8(a) POP(b) DEVW(&u->dev[a >> 4], a, b) break;
+$a
+
+ok, maybe I have a bad GETVECTOR in the C code!?
+
+Zpc=454, keep=128, short=0, instr=0
+pc=456, keep=128, short=0, instr=0
+pc=458, keep=0, short=0, instr=17
+
+uxn_eval() pc=1
+pc=2, keep=128, short=0, instr=11
+<wst> empty
+<rst> empty
+Halted: Return-stack underflow#00d1, at 0x0001
+
+because uxn_eval at pc=1!
+
+set a breakpoint at uxn_eval and we can see which is calling this vector
+
+it's here
+
+    uxn_eval(u, devscreen->dat[0x0]); // callback that something has changed
+
+in that uxnapp_runloop(void)
+maybe check that dat[0x0] is >0x100?
+
+aka it has a vector to call to?
+
+ok! I fixed it!
+I was pulling just 8 bits from the vector, instead of 16, so the on-frame I think was being misread as pc=1 :O

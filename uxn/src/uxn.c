@@ -30,11 +30,12 @@ WITH REGARD TO THIS SOFTWARE.
 #define DEVW8(x, y) { dev->dat[(x) & 0xf] = y; dev->deo(dev, (x) & 0x0f); }
 #define DEVW(d, x, y) { dev = (d); if(bs) { DEVW8((x), (y) >> 8); DEVW8((x) + 1, (y)); } else { DEVW8((x), (y)) } }
 #define WARP(x) { if(bs) pc = (x); else pc += (Sint8)(x); }
-#define LIMIT 0x40000 /* around 3 ms */
-
+//#define LIMIT 0x40000 /* around 3 ms */
+#define LIMIT 0x80000 /* around 6 ms? */
 int
 uxn_eval(Uxn *u, Uint16 pc)
 {
+//    fprintf(stderr,"uxn_eval() pc=%hu\n", pc);
 	unsigned int a, b, c, j, k, bs, instr, errcode;
 	unsigned int limit = LIMIT;
 	Uint8 kptr, *sp;
@@ -42,6 +43,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 	Device *dev;
 	if(!pc || u->dev[0].dat[0xf]) return 0;
 	while((instr = u->ram[pc++])) {
+        //fprintf(stderr,"pc=%hu, instr=%0x\n", pc, instr);
 		if(!limit--) {
 			if(!uxn_interrupt()) {
 				errcode = 6;
@@ -64,6 +66,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		}
 		/* Short Mode */
 		bs = instr & 0x20 ? 1 : 0;
+//        fprintf(stderr,"pc=%hu, keep=%d, short=%d, instr=%0x\n", pc, (instr & 0x80), (instr & 0x20), (instr & 0x1f));
 		switch(instr & 0x1f) {
 		/* Stack */
 		case 0x00: /* LIT */ PEEK(a, pc) PUSH(src, a) pc += 1 + bs; break;

@@ -33,5 +33,5 @@ BRK
 
 JMP2r
 
-@hello-txt "Hello 20 "Uxn! $1
+@hello-txt "Hello 20 "YouUxn! 0a $1
 @yousaid-txt "You 20 "said: 20 $1
