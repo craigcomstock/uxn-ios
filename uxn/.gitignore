@@ -8,4 +8,10 @@
 *.bak
 /*-test
 /screenshot-*.bmp
+
 *snarf
+*theme
+
+*.rom
+
+*.[o0125678vqki]
