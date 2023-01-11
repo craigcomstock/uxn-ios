@@ -18,7 +18,7 @@ typedef float r32;
 typedef struct {
     u16 width;
     u16 height;
-    u32* pixels;
+    u8* pixels;
 } PlatformBitmap;
 
 
@@ -35,6 +35,7 @@ void* PlatformAlloc(u32 size);
 void PlatformFree(void* memory);
 void PlatformMemset(void* memory, u8 value, u32 size);
 
+void PlatformSetScreenSize(u16 width, u16 height);
 void PlatformGetScreenSize(u16* width, u16* height);
 void PlatformDrawBackground(const PlatformBitmap* bitmap);
 void PlatformDrawForeground(const PlatformBitmap* bitmap);

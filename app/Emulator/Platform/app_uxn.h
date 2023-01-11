@@ -29,8 +29,8 @@ void
 uxnapp_setmousebutton(u8 button, u8 state);
 
 
-void
-uxnapp_audio_callback(u8* stream, u32 len);
+//void
+//uxnapp_audio_callback(u8* stream, u32 len);
 
 
 #ifdef __cplusplus

@@ -28,6 +28,15 @@ PlatformGetScreenSize(u16* width, u16* height) {
     *height = size.height;
 }
 
+void
+PlatformSetScreenSize(u16 width, u16 height) {
+    CGSize size = CGSize();
+    size.width = width;
+    size.height = height;
+    fprintf(stderr, "PlatformSetScreenSize(), width=%d, height=%d\n", width, height);
+    [Platform.sharedPlatform setCanvasSize:size];
+    
+}
 
 void
 PlatformDrawBackground(const PlatformBitmap* bitmap) {
@@ -43,6 +52,7 @@ PlatformDrawForeground(const PlatformBitmap* bitmap) {
 
 void
 PlatformCopyRom(u8* buffer, u32 size) {
+    fprintf(stderr, "PlatformCopyRom(buffer=%p, size=%d)\n", buffer, size);
     NSData* data = Platform.sharedPlatform.romData;
     if (data && data.length <= size) {
         memcpy(buffer, data.bytes, data.length);
@@ -200,7 +210,8 @@ PlatformSeekFile(PlatformFile file, u32 offset, u32 whence) {
 - (void)setBackgroundPixels:(void *)pixels {
     CGSize canvasSize = self.canvasSize;
     NSUInteger count = 4 * canvasSize.width * canvasSize.height;
-    self.bgPixels = [NSData dataWithBytes:pixels length:count];
+    fprintf(stderr,"setBackgroundPixels(), canvas width=%f, height=%f, count=%lu\n", canvasSize.width, canvasSize.height, count);
+    self.bgPixels = [NSData dataWithBytes:pixels length:count]; // heap-buffer-overflow
 }
 
 - (void)setForegroundPixels:(void *)pixels {

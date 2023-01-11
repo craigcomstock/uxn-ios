@@ -20,6 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)handleMouseButton:(NSUInteger)button isDown:(BOOL)down;
 - (void)setBackgroundPixels:(void*)pixels;
 - (void)setForegroundPixels:(void*)pixels;
+- (void)setCanvasSize:(CGSize)size;
 
 @end
 

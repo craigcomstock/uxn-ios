@@ -13,7 +13,7 @@ PlatformDelegateAppExit() {
     uxnapp_deinit();
 }
 
-
+// TODO should this callback cause a uxn_eval on the screen vector? in app_uxn?
 void
 PlatformDelegateAppRunloop() {
     uxnapp_runloop();
@@ -40,5 +40,5 @@ PlatformDelegateMouseButton(PlatformMouseButton button, u8 down) {
 
 void
 PlatformDelegateRenderAudio(u8* buffer, u32 size) {
-    uxnapp_audio_callback(buffer, size);
+    //uxnapp_audio_callback(buffer, size);
 }
