@@ -2,53 +2,74 @@
     {
         "section": "",
         "roms": [
-            {"file": "blank.rom", "description": "a blank file"}
+            {"file": "projects/examples/devices/mouseconsole.rom", "description": ""},
+            {"file": "projects/examples/devices/console.rom", "description": ""},
+        ]
+    },
+    {
+        "section": "software",
+        "roms": [
+            {"file": "projects/software/asma.rom", "description": ""},
+            {"file": "projects/software/calc.rom", "description": ""},
+            {"file": "projects/software/clock.rom", "description": ""},
+            {"file": "projects/software/launcher.rom", "description": ""},
+            {"file": "projects/software/neralie.rom", "description": ""},
+            {"file": "projects/software/piano.rom", "description": ""},
+        ]
+    },
+    {
+        "section": "utils",
+        "roms": [
+            {"file": "projects/utils/hexdump.rom", "description": ""},
+            {"file": "projects/utils/metadata.rom", "description": ""},
+            {"file": "projects/utils/proquints.rom", "description": ""},
+            {"file": "projects/utils/tests.rom", "description": ""},
         ]
     },
     {
         "section": "demos",
         "roms": [
-            {"file": "demos/automata.rom", "description": "Project by Alex Schroeder - https://alexschroeder.ch"},
-            {"file": "demos/bifurcan.rom", "description": "Every second, the Labyrinth reorganize itself to display the time."},
-            {"file": "demos/darena.rom", "description": "an open-ended game of rocks and sand\ncontributed by and cc0 sejo 12021"},
-            {"file": "demos/drum-rack.rom", "description": "drum rack"},
-            {"file": "demos/font.rom", "description": "font"},
-            {"file": "demos/life.rom", "description": "Game Of Life"},
-            {"file": "demos/musictracker.rom", "description": "mini music tracker"},
-            {"file": "demos/neralie.rom", "description": "clock with arvelie date"},
-            {"file": "demos/piano.rom", "description": "piano"},
-            {"file": "demos/polycat.rom", "description": "polycat"},
-            {"file": "demos/theme.rom", "description": "Dev/Screen"}
+            {"file": "projects/examples/demos/amiga.rom", "description": ""},
+            {"file": "projects/examples/demos/bifurcan.rom", "description": "Every second, the Labyrinth reorganize itself to display the time."},
+            {"file": "projects/examples/demos/bitwise.rom", "description": ""},
+            {"file": "projects/examples/demos/bunnymark.rom", "description": ""},
+            {"file": "projects/examples/demos/cube3d.rom", "description": ""},
+            {"file": "projects/examples/demos/drool.rom", "description": ""},
+            {"file": "projects/examples/demos/dvd.rom", "description": ""},
+            {"file": "projects/examples/demos/life.rom", "description": "Game Of Life"},
+            {"file": "projects/examples/demos/mandelbrot.rom", "description": ""},
+            {"file": "projects/examples/demos/move.rom", "description": ""},
+            {"file": "projects/examples/demos/polycat.rom", "description": "polycat"},
+            {"file": "projects/examples/demos/snake.rom", "description": ""},
+            {"file": "projects/examples/demos/wireworld.rom", "description": ""},
         ]
     },
     {
         "section": "devices",
         "roms": [
-            {"file": "devices/audio.channels.rom", "description": ""},
-            {"file": "devices/audio.rom", "description": ""},
-            {"file": "devices/console.echo.rom", "description": ""},
-            {"file": "devices/console.lib.rom", "description": ""},
-            {"file": "devices/console.rom", "description": ""},
-            {"file": "devices/controller.buttons.rom", "description": ""},
-            {"file": "devices/controller.keys.rom", "description": ""},
-            {"file": "devices/datetime.rom", "description": ""},
-            {"file": "devices/file.load.rom", "description": ""},
-            {"file": "devices/file.rom", "description": ""},
-            {"file": "devices/file.save.rom", "description": ""},
-            {"file": "devices/mouse.rom", "description": ""},
-            {"file": "devices/screen.rom", "description": ""}
+            {"file": "projects/examples/devices/audio.channels.rom", "description": ""},
+            {"file": "projects/examples/devices/audio.rom", "description": ""},
+            {"file": "projects/examples/devices/console.echo.rom", "description": ""},
+            {"file": "projects/examples/devices/console.lib.rom", "description": ""},
+            {"file": "projects/examples/devices/console.rom", "description": ""},
+            {"file": "projects/examples/devices/controller.buttons.rom", "description": ""},
+            {"file": "projects/examples/devices/controller.keys.rom", "description": ""},
+            {"file": "projects/examples/devices/file.load.rom", "description": ""},
+            {"file": "projects/examples/devices/file.rom", "description": ""},
+            {"file": "projects/examples/devices/file.save.rom", "description": ""},
+            {"file": "projects/examples/devices/mouse.rom", "description": ""},
+            {"file": "projects/examples/devices/screen.rom", "description": ""}
         ]
     },
     {
         "section": "gui",
         "roms": [
-            {"file": "gui/animation.rom", "description": "GUI Animation"},
-            {"file": "gui/hover.rom", "description": "GUI Hover"},
-            {"file": "gui/label.rom", "description": "GUI Labels"},
-            {"file": "gui/picture.rom", "description": "GUI Picture"},
-            {"file": "gui/proportional-font.rom", "description": "GUI Proportional font"},
-            {"file": "gui/shapes.rom", "description": "GUI Shapes"},
-            {"file": "gui/wallpaper.rom", "description": ""}
+            {"file": "projects/examples/gui/hover.rom", "description": "GUI Hover"},
+            {"file": "projects/examples/gui/label.rom", "description": "GUI Labels"},
+            {"file": "projects/examples/gui/monospace.rom", "description": ""},
+            {"file": "projects/examples/gui/picture.rom", "description": "GUI Picture"},
+            {"file": "projects/examples/gui/shapes.rom", "description": "GUI Shapes"},
+            {"file": "projects/examples/gui/terminal.rom", "description": ""},
         ]
     }
 ]
