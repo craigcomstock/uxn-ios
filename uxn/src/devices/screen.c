@@ -15,11 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-UxnScreen uxn_screen; // TODO, might be nice to register a screen_write() function
-// refer to it as extern and define in uxnemu and app_uxn (ios)
-extern void
-screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color);
-
+UxnScreen uxn_screen;
 
 static Uint8 blending[5][16] = {
 	{0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
@@ -30,6 +26,18 @@ static Uint8 blending[5][16] = {
 
 static Uint32 palette_mono[] = {
 	0x0f000000, 0x0fffffff};
+
+static void
+screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
+{
+	if(x < p->width && y < p->height) {
+		Uint32 i = x + y * p->width;
+		if(color != layer->pixels[i]) {
+			layer->pixels[i] = color;
+			layer->changed = 1;
+		}
+	}
+}
 
 static void
 screen_blit(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy, Uint8 twobpp)
@@ -63,19 +71,15 @@ screen_palette(UxnScreen *p, Uint8 *addr)
 	}
 	p->fg.changed = p->bg.changed = 1;
 }
-// refactor, ios needs to do this a different way
+
 void
 screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 {
-    // seeing heap-buffer-overflow later on these allocations, background in this case
-    int layer_size = 4 * width * height;
-    int pixel_count = width * height * sizeof(Uint32);
 	Uint8
-		*bg = realloc(p->bg.pixels, layer_size),
-		*fg = realloc(p->fg.pixels, layer_size);
+		*bg = realloc(p->bg.pixels, width * height),
+		*fg = realloc(p->fg.pixels, width * height);
 	Uint32
-		*pixels = realloc(p->pixels, pixel_count);
-    fprintf(stderr,"screen_resize() width=%d, height=%d, layer_size=%d, pixel_count=%d\n", width, height, layer_size, pixel_count);
+		*pixels = realloc(p->pixels, width * height * sizeof(Uint32));
 	if(bg) p->bg.pixels = bg;
 	if(fg) p->fg.pixels = fg;
 	if(pixels) p->pixels = pixels;

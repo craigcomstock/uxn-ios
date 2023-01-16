@@ -126,24 +126,6 @@ set_size(void)
 	return 1;
 }
 
-// moved from devices/screen.c to here since it's somewhat specific to
-// the implementation in the case of SDL (where the fg/bg are rendered in code)
-// versus iOS where fg/bg are sent as separate layers to underlying OS
-void
-screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
-{
-    if(x < p->width && y < p->height) {
-        Uint32 i = x + y * p->width;
-        if(color != layer->pixels[i]) {
-            layer->pixels[i] = color;
-            layer->changed = 1;
-        }
-    }
-}
-
-// TODO refactor to move screen_write() from screen.c to here since it can be
-// platform specific, e.g. iOS supports two layers so screen_write should just write
-// to layers fg/bg and skip the top-level UxnScreen.pixels array.
 static void
 redraw(void)
 {
