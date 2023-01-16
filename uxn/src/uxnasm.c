@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 /*
-Copyright (c) 2021 Devine Lu Linvega
+Copyright (c) 2021-2023 Devine Lu Linvega, Andrew Alderwick
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -76,6 +76,10 @@ error(const char *name, const char *msg)
 static char *
 sublabel(char *src, char *scope, char *name)
 {
+	if(slen(scope) + slen(name) >= 0x3f) {
+		error("Sublabel length too long", name);
+		return NULL;
+	}
 	return scat(scat(scpy(scope, src, 0x40), "/"), name);
 }
 
@@ -178,9 +182,11 @@ makereference(char *scope, char *label, Uint16 addr)
 	if(p.rlen == 0x800)
 		return error("References limit exceeded", label);
 	r = &p.refs[p.rlen++];
-	if(label[1] == '&')
-		scpy(sublabel(subw, scope, label + 2), r->name, 0x40);
-	else {
+	if(label[1] == '&') {
+		if(!sublabel(subw, scope, label + 2))
+			return error("Invalid sublabel", label);
+		scpy(subw, r->name, 0x40);
+	} else {
 		int pos = spos(label + 1, '/');
 		if(pos > 0) {
 			Label *l;
@@ -211,9 +217,7 @@ writebyte(Uint8 b)
 static int
 writeopcode(char *w)
 {
-	Uint8 res;
-	res = writebyte(findopcode(w));
-	return res;
+	return writebyte(findopcode(w));
 }
 
 static int
@@ -227,9 +231,7 @@ writeshort(Uint16 s, int lit)
 static int
 writelitbyte(Uint8 b)
 {
-	if(!writebyte(findopcode("LIT"))) return 0;
-	if(!writebyte(b)) return 0;
-	return 1;
+	return writebyte(findopcode("LIT")) && writebyte(b);
 }
 
 static int
@@ -291,43 +293,42 @@ parse(char *w, FILE *f)
 		scpy(w + 1, p.scope, 0x40);
 		break;
 	case '&': /* sublabel */
-		if(!makelabel(sublabel(subw, p.scope, w + 1)))
+		if(!sublabel(subw, p.scope, w + 1) || !makelabel(subw))
 			return error("Invalid sublabel", w);
 		break;
 	case '#': /* literals hex */
-		if(!sihx(w + 1) || (slen(w) != 3 && slen(w) != 5))
+		if(sihx(w + 1) && slen(w) == 3)
+			return writelitbyte(shex(w + 1));
+		else if(sihx(w + 1) && slen(w) == 5)
+			return writeshort(shex(w + 1), 1);
+		else
 			return error("Invalid hex literal", w);
-		if(slen(w) == 3) {
-			if(!writelitbyte(shex(w + 1))) return 0;
-		} else if(slen(w) == 5) {
-			if(!writeshort(shex(w + 1), 1)) return 0;
-		}
 		break;
 	case '_': /* raw byte relative */
 		makereference(p.scope, w, p.ptr);
-		if(!writebyte(0xff)) return 0;
-		break;
+		return writebyte(0xff);
 	case ',': /* literal byte relative */
-		makereference(p.scope, w, p.ptr);
-		if(!writelitbyte(0xff)) return 0;
-		break;
+		makereference(p.scope, w, p.ptr + 1);
+		return writelitbyte(0xff);
 	case '-': /* raw byte absolute */
 		makereference(p.scope, w, p.ptr);
-		if(!writebyte(0xff)) return 0;
-		break;
+		return writebyte(0xff);
 	case '.': /* literal byte zero-page */
-		makereference(p.scope, w, p.ptr);
-		if(!writelitbyte(0xff)) return 0;
-		break;
+		makereference(p.scope, w, p.ptr + 1);
+		return writelitbyte(0xff);
 	case ':': /* raw short absolute */
 	case '=':
 		makereference(p.scope, w, p.ptr);
-		if(!writeshort(0xffff, 0)) return 0;
-		break;
+		return writeshort(0xffff, 0);
 	case ';': /* literal short absolute */
-		makereference(p.scope, w, p.ptr);
-		if(!writeshort(0xffff, 1)) return 0;
-		break;
+		makereference(p.scope, w, p.ptr + 1);
+		return writeshort(0xffff, 1);
+	case '?': /* JCI */
+		makereference(p.scope, w, p.ptr + 1);
+		return writebyte(0x20) && writeshort(0xffff, 0);
+	case '!': /* JMI */
+		makereference(p.scope, w, p.ptr + 1);
+		return writebyte(0x40) && writeshort(0xffff, 0);
 	case '"': /* raw string */
 		i = 0;
 		while((c = w[++i]))
@@ -338,25 +339,24 @@ parse(char *w, FILE *f)
 		if(slen(w) == 1) break; /* else fallthrough */
 	default:
 		/* opcode */
-		if(findopcode(w) || scmp(w, "BRK", 4)) {
-			if(!writeopcode(w)) return 0;
-		}
+		if(findopcode(w) || scmp(w, "BRK", 4))
+			return writeopcode(w);
 		/* raw byte */
-		else if(sihx(w) && slen(w) == 2) {
-			if(!writebyte(shex(w))) return 0;
-		}
+		else if(sihx(w) && slen(w) == 2)
+			return writebyte(shex(w));
 		/* raw short */
-		else if(sihx(w) && slen(w) == 4) {
-			if(!writeshort(shex(w), 0)) return 0;
-		}
+		else if(sihx(w) && slen(w) == 4)
+			return writeshort(shex(w), 0);
 		/* macro */
 		else if((m = findmacro(w))) {
 			for(i = 0; i < m->len; i++)
 				if(!parse(m->items[i], f))
 					return 0;
 			return 1;
-		} else
-			return error("Unknown token", w);
+		} else {
+			makereference(p.scope, w - 1, p.ptr + 1);
+			return writebyte(0x60) && writeshort(0xffff, 0);
+		}
 	}
 	return 1;
 }
@@ -366,10 +366,12 @@ resolve(void)
 {
 	Label *l;
 	int i;
+	Uint16 a;
 	for(i = 0; i < p.rlen; i++) {
 		Reference *r = &p.refs[i];
 		switch(r->rune) {
 		case '_':
+		case ',':
 			if(!(l = findlabel(r->name)))
 				return error("Unknown relative reference", r->name);
 			p.data[r->addr] = (Sint8)(l->addr - r->addr - 2);
@@ -377,43 +379,32 @@ resolve(void)
 				return error("Relative reference is too far", r->name);
 			l->refs++;
 			break;
-		case ',':
-			if(!(l = findlabel(r->name)))
-				return error("Unknown relative reference", r->name);
-			p.data[r->addr + 1] = (Sint8)(l->addr - r->addr - 3);
-			if((Sint8)p.data[r->addr + 1] != (l->addr - r->addr - 3))
-				return error("Relative reference is too far", r->name);
-			l->refs++;
-			break;
 		case '-':
-			if(!(l = findlabel(r->name)))
-				return error("Unknown absolute reference", r->name);
-			p.data[r->addr] = l->addr & 0xff;
-			l->refs++;
-			break;
 		case '.':
 			if(!(l = findlabel(r->name)))
 				return error("Unknown zero-page reference", r->name);
-			p.data[r->addr + 1] = l->addr & 0xff;
+			p.data[r->addr] = l->addr & 0xff;
 			l->refs++;
 			break;
 		case ':':
 		case '=':
+		case ';':
 			if(!(l = findlabel(r->name)))
 				return error("Unknown absolute reference", r->name);
 			p.data[r->addr] = l->addr >> 0x8;
 			p.data[r->addr + 1] = l->addr & 0xff;
 			l->refs++;
 			break;
-		case ';':
+		case '?':
+		case '!':
+		default:
 			if(!(l = findlabel(r->name)))
 				return error("Unknown absolute reference", r->name);
-			p.data[r->addr + 1] = l->addr >> 0x8;
-			p.data[r->addr + 2] = l->addr & 0xff;
+			a = l->addr - r->addr - 2;
+			p.data[r->addr] = a >> 0x8;
+			p.data[r->addr + 1] = a & 0xff;
 			l->refs++;
 			break;
-		default:
-			return error("Unknown reference", r->name);
 		}
 	}
 	return 1;
@@ -423,10 +414,11 @@ static int
 assemble(FILE *f)
 {
 	char w[0x40];
+	p.ptr = 0x100;
 	scpy("on-reset", p.scope, 0x40);
-	while(fscanf(f, "%63s", w) == 1)
-		if(!parse(w, f))
-			return error("Unknown token", w);
+	while(fscanf(f, "%62s", w) == 1)
+		if(slen(w) > 0x3d || !parse(w, f))
+			return error("Invalid token", w);
 	return resolve();
 }
 
@@ -451,16 +443,17 @@ review(char *filename)
 static void
 writesym(char *filename)
 {
+	int i;
 	char symdst[0x60];
 	FILE *fp;
 	if(slen(filename) > 0x60 - 5)
 		return;
 	fp = fopen(scat(scpy(filename, symdst, slen(filename) + 1), ".sym"), "w");
-	int i;
 	if(fp != NULL) {
 		for(i = 0; i < p.llen; i++) {
-			fwrite(&p.labels[i].addr + 1, 1, 1, fp);
-			fwrite(&p.labels[i].addr, 1, 1, fp);
+			Uint8 hb = p.labels[i].addr >> 8, lb = p.labels[i].addr & 0xff;
+			fwrite(&hb, 1, 1, fp);
+			fwrite(&lb, 1, 1, fp);
 			fwrite(p.labels[i].name, slen(p.labels[i].name) + 1, 1, fp);
 		}
 	}

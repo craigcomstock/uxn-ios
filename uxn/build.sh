@@ -46,8 +46,6 @@ rm -f ./bin/*
 if [ $format = 1 ];
 then
 	echo "Formatting.."
-	clang-format -i src/uxn.h
-	clang-format -i src/uxn.c
 	clang-format -i src/devices/system.h
 	clang-format -i src/devices/system.c
 	clang-format -i src/devices/screen.h
@@ -117,11 +115,9 @@ echo "Assembling(asma).."
 if [ $norun = 1 ]; then exit; fi
 
 echo "Assembling(piano).."
-bin/uxncli bin/asma.rom projects/software/piano.tal bin/piano.rom 2> bin/piano.log
+./bin/uxnasm projects/software/piano.tal bin/piano.rom
 
 echo "Running.."
-cd bin
-./uxnemu piano.rom
+./bin/uxnemu bin/piano.rom
 
 echo "Done."
-cd ..

@@ -196,9 +196,9 @@
 @asma-init-next-pass ( -- )
 	;asma/pass LDA INC ;asma/pass STA
 	;asma-write-buffer ;asma-output/ptr STA2
-	#0100 DUP DUP2 ( 0100 00 0000 )
-		;asma/addr STA2
+	#0100 DUP2 DUP ( 0100 0100 00 )
 		;asma/state STA
+		;asma/addr STA2
 		;asma/written-addr STA2
 	;&preamble-end ;&preamble SUB2k ;asma-assemble-chunk JSR2 POP2 POP2
 	JMP2r
@@ -732,6 +732,20 @@
 	&ignore-error
 	JMP2r
 
+@asma-jci
+	#20 ,asma-jxi JMP ( tail call )
+
+@asma-jmi
+	#40
+	( fall through )
+
+@asma-jxi
+	;asma-write-byte JSR2
+	,asma-addr-helper JSR
+	;asma/addr LDA2 SUB2
+	#0002 SUB2
+	;asma-write-short JMP2 ( tail call )
+
 @asma-literal-rel-addr
 	LIT LIT ;asma-write-byte JSR2
 	( fall through )
@@ -833,7 +847,6 @@
 	( hex short   ) ,asma-short-helper/raw JMP
 
 	&not-hex
-	.System/rst DEI #e0 GTH ,&too-deep JCN
 	;asma-trees/macros ;asma-traverse-tree JSR2 ,&not-macro JCN
 
 	&macro-loop
@@ -852,15 +865,9 @@
 
 	&not-macro
 	POP2
-	;asma-msg-token ;asma/error STA2
-	JMP2r
-
-	&too-deep
-	;asma-msg-too-deep ;asma/error STA2
-	JMP2r
+	#60 ;asma-jxi JMP2 ( tail call )
 
 @asma-include
-	.System/rst DEI #e0 GTH ,asma-normal-body/too-deep JCN
 	;heap LDA2
 		;asma/token LDA2 ;append-heap-string JSR2
 		;asma-assemble-file-pass JSR2
@@ -873,10 +880,8 @@
 @asma-msg-zero-page "Address 20 "not 20 "in 20 "zero 20 "page 00
 @asma-msg-relative  "Address 20 "outside 20 "range 00
 @asma-msg-label     "Label 20 "not 20 "found 00
-@asma-msg-token     "Unrecognised 20 "token 00
 @asma-msg-macro     "Macro 20 "already 20 "exists 00
 @asma-msg-rewound   "Memory 20 "overwrite 00
-@asma-msg-too-deep  "Recursion 20 "level 20 "too 20 "deep 00
 @asma-msg-redefined "Label 20 "redefined 00
 
 ( trees )
@@ -899,11 +904,12 @@
 	&7d          $2         $2          "} 00          :asma-macro-end
 
 @asma-first-char-normal
-	&22          $2         $2          "" 00          :asma-raw-word
-	&23         :&22        $2          "# 00          :asma-literal-hex
-	&24         :&23       :&25         "$ 00          :asma-pad-relative
-	&25          $2         $2          "% 00          :asma-macro-define
-	&26         :&24       :&2c         26 00 ( & )    :asma-sublabel-define
+	&21          $2         $2          "! 00          :asma-jmi
+	&22         :&21        $2          "" 00          :asma-raw-word
+	&23         :&22       :&25         "# 00          :asma-literal-hex
+	&24          $2         $2          "$ 00          :asma-pad-relative
+	&25         :&24        $2          "% 00          :asma-macro-define
+	&26         :&23       :&2c         26 00 ( & )    :asma-sublabel-define
 	&28          $2         $2          "( 00          :asma-comment-start
 	&29         :&28        $2          ") 00          :asma-comment-end
 	&2c         :&29       :&2d         ", 00          :asma-literal-rel-addr
@@ -912,7 +918,8 @@
 	&3a          $2         $2          ": 00          :asma-abs-addr
 	&3b         :&3a        $2          "; 00          :asma-literal-abs-addr
 	&3d         :&3b       :&40         "= 00          :asma-abs-addr
-	&40          $2         $2          "@ 00          :asma-label-define
+	&3f          $2         $2          "? 00          :asma-jci
+	&40         :&3f        $2          "@ 00          :asma-label-define
 	&5f         :&3d       :&7d         "_ 00          :asma-rel-addr
 	&7b          $2         $2          "{ 00          :asma-ignore
 	&7c         :&7b        $2          "| 00          :asma-pad-absolute
