@@ -32,7 +32,7 @@ typedef struct {
 	Uint8 dat[255], ptr;
 } Stack;
 
-typedef struct {
+typedef struct Uxn {
 	Uint8 *ram, *dev;
 	Stack *wst, *rst;
 	Uint8 (*dei)(struct Uxn *u, Uint8 addr);
