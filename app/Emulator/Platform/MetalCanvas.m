@@ -188,7 +188,7 @@
         // EXC_BAD_ACCESS here because the viewportsize is bigger than changed canvas size in Platform.mm
         // 2023-jan-18 SIGABRT here, maybe withBytes:pixels aka data.bytes should be dereferences?
         // I see a nice pattern in there of 00 00 00 FF repeating! like clear screen did some work there :)
-        [texture replaceRegion:region mipmapLevel:0 withBytes:data.bytes bytesPerRow:_viewportSize.x];
+        [texture replaceRegion:region mipmapLevel:0 withBytes:pixels bytesPerRow:_viewportSize.x];
     }
 }
 
