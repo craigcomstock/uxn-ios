@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)renderLoop:(void (^) (void))block;
 
 @property (assign, nonatomic, readonly) CGSize canvasSize;
-@property (strong, nonatomic, nullable, readonly) NSData* bgPixels;
+//@property (strong, nonatomic, nullable, readonly) NSData* bgPixels;
 @property (strong, nonatomic, nullable, readonly) NSData* fgPixels;
 @property (assign, nonatomic, readonly) NSInteger targetFramesPerSecond;
 @property (strong, nonatomic, nullable) NSData* romData;

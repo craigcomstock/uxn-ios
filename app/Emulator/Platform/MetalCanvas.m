@@ -12,7 +12,7 @@
 @property (strong, nonatomic) id<MTLRenderPipelineState> pipelineState;
 @property (strong, nonatomic) id<MTLBuffer> vertices;
 @property (assign, nonatomic) NSUInteger vertexCount;
-@property (strong, nonatomic) id<MTLTexture> backgroundTexture;
+//@property (strong, nonatomic) id<MTLTexture> backgroundTexture;
 @property (strong, nonatomic) id<MTLTexture> foregroundTexture;
 
 @end
@@ -98,7 +98,7 @@
     [commandEncoder setRenderPipelineState:self.pipelineState];
     [commandEncoder setVertexBuffer:self.vertices offset:0 atIndex:VertexInputIndexVertices];
     [commandEncoder setVertexBytes:&_viewportSize length:sizeof(_viewportSize) atIndex:VertexInputIndexViewportSize];
-    [commandEncoder setFragmentTexture:self.backgroundTexture atIndex:TextureIndexBaseColor];
+    //[commandEncoder setFragmentTexture:self.backgroundTexture atIndex:TextureIndexBaseColor];
     [commandEncoder setFragmentTexture:self.foregroundTexture atIndex:TextureIndexForeColor];
     [commandEncoder drawPrimitives:(MTLPrimitiveTypeTriangle) vertexStart:0 vertexCount:self.vertexCount];
     [commandEncoder endEncoding];
@@ -117,7 +117,7 @@
         _viewportSize.y = height;
     }
     
-    self.backgroundTexture = [self makeTexture];
+    //self.backgroundTexture = [self makeTexture];
     self.foregroundTexture = [self makeTexture];
     
     float hx = _viewportSize.x / 2;
@@ -160,7 +160,8 @@
      Ordinary format with four 8-bit normalized unsigned integer components in BGRA order.
      https://developer.apple.com/documentation/metal/mtlpixelformat/mtlpixelformatbgra8unorm
      */
-    textureDescriptor.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    /* maybe use MTLPixelFormatR32Uint instead? to align with uxn/screen.c? */
+    textureDescriptor.pixelFormat = MTLPixelFormatR32Uint;
     textureDescriptor.width = _viewportSize.x;
     textureDescriptor.height = _viewportSize.y;
 
@@ -168,7 +169,7 @@
 }
 
 - (void)updateTextures {
-    [self updateTexture:self.backgroundTexture withData:Platform.sharedPlatform.bgPixels];
+    //[self updateTexture:self.backgroundTexture withData:Platform.sharedPlatform.bgPixels];
     [self updateTexture:self.foregroundTexture withData:Platform.sharedPlatform.fgPixels];
 }
 
@@ -178,10 +179,12 @@
         {_viewportSize.x, _viewportSize.y, 1}
     };
 
-    NSUInteger bytesPerRow = 4 * _viewportSize.x;
+    //NSUInteger bytesPerRow = 4 * _viewportSize.x;
     const void* pixels = data.bytes;
     // EXC_BAD_ACCESS here because the viewportsize is bigger than changed canvas size in Platform.mm
-    [texture replaceRegion:region mipmapLevel:0 withBytes:pixels bytesPerRow:bytesPerRow];
+    // 2023-jan-18 SIGABRT here, maybe withBytes:pixels aka data.bytes should be dereferences?
+    // I see a nice pattern in there of 00 00 00 FF repeating! like clear screen did some work there :)
+    [texture replaceRegion:region mipmapLevel:0 withBytes:pixels bytesPerRow:_viewportSize.x];
 }
 
 @end

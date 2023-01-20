@@ -115,11 +115,11 @@ PlatformSeekFile(PlatformFile file, u32 offset, u32 whence) {
 @interface Platform ()
 
 @property (assign, nonatomic) CGSize canvasSize;
-@property (strong, nonatomic, nullable) NSData* bgPixels;
+//@property (strong, nonatomic, nullable) NSData* bgPixels;
 @property (strong, nonatomic, nullable) NSData* fgPixels;
 @property (assign, nonatomic) NSInteger targetFramesPerSecond;
 @property (assign, nonatomic) CGContextRef imageContext;
-@property (strong, nonatomic, nullable) UIImage* backgroundImage;
+//@property (strong, nonatomic, nullable) UIImage* backgroundImage;
 @property (strong, nonatomic, nullable) UIImage* foregroundImage;
 @property (strong, nonatomic) PlatformAudio* audio;
 
@@ -158,17 +158,25 @@ PlatformSeekFile(PlatformFile file, u32 offset, u32 whence) {
 - (void)setCanvasSize:(CGSize)canvasSize {
     _canvasSize = canvasSize;
     
-    size_t components = 4;
+    size_t components = 1; // what is this exactly? was 4
     size_t bitsPerComponent = 8;
     size_t bytesPerRow = canvasSize.width * components;
+    //maybe kCGImageAlphaPremultipliedLast instead? RGBA?
     uint32_t bitmapInfo = kCGImageAlphaPremultipliedFirst;
     
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
     
+    /*
+     https://developer.apple.com/documentation/coregraphics/1455939-cgbitmapcontextcreate
+     
+     CGContextRef CGBitmapContextCreate(void *data, size_t width, size_t height, size_t bitsPerComponent, size_t bytesPerRow, CGColorSpaceRef space, uint32_t bitmapInfo);
+     
+     The first parameter asks the function to allocate memory for us:
+    Pass NULL if you want this function to allocate memory for the bitmap. This frees you from managing your own memory, which reduces memory leak issues.*/
     CGContextRef context = CGBitmapContextCreate(NULL, canvasSize.width, canvasSize.height, bitsPerComponent, bytesPerRow, colorSpace, bitmapInfo);
     
     CGColorSpaceRelease(colorSpace);
-    
+    // TODO, here context is 0x0 :(
     self.imageContext = context;
 }
 
@@ -207,16 +215,18 @@ PlatformSeekFile(PlatformFile file, u32 offset, u32 whence) {
     }
 }
 
+/*
 - (void)setBackgroundPixels:(void *)pixels {
     CGSize canvasSize = self.canvasSize;
-    NSUInteger count = 4 * canvasSize.width * canvasSize.height;
+    NSUInteger count = canvasSize.width * canvasSize.height;
     fprintf(stderr,"setBackgroundPixels(), canvas width=%f, height=%f, count=%lu\n", canvasSize.width, canvasSize.height, count);
     self.bgPixels = [NSData dataWithBytes:pixels length:count]; // heap-buffer-overflow
 }
+*/
 
 - (void)setForegroundPixels:(void *)pixels {
     CGSize canvasSize = self.canvasSize;
-    NSUInteger count = 4 * canvasSize.width * canvasSize.height;
+    NSUInteger count = canvasSize.width * canvasSize.height;
     self.fgPixels = [NSData dataWithBytes:pixels length:count];
 }
 

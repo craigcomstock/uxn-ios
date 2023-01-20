@@ -18,7 +18,7 @@ typedef float r32;
 typedef struct {
     u16 width;
     u16 height;
-    u8* pixels;
+    u32* pixels;
 } PlatformBitmap;
 
 

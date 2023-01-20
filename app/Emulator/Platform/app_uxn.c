@@ -21,6 +21,35 @@ static Uxn _uxn;
 //static Uint8 *devsystem, *devscreen, *devmouse;
 // *devaudio0;
 static Uint8 reqdraw = 0;
+/*
+void
+ios_screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
+{
+    Uint8
+        *bg = realloc(p->bg.pixels, width * height),
+        *fg = realloc(p->fg.pixels, width * height);
+    Uint8
+        *pixels = realloc(p->pixels, 4 * width * height * sizeof(Uint8));
+    if(bg) p->bg.pixels = bg;
+    if(fg) p->fg.pixels = fg;
+    if(pixels) p->pixels = pixels;
+    if(bg && fg && pixels) {
+        p->width = width;
+        p->height = height;
+        screen_clear(p, &p->bg);
+        screen_clear(p, &p->fg);
+    }
+}
+
+void
+ios_screen_clear(UxnScreen *p, Layer *layer)
+{
+    Uint32 i, size = p->width * p->height;
+    for(i = 0; i < size; i++)
+        layer->pixels[i] = 0x00;
+    layer->changed = 1;
+}
+*/
 
 static void
 redraw(Uxn *u) {
@@ -30,7 +59,7 @@ redraw(Uxn *u) {
     //    inspect(&uxn_screen, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
     //}
     // TODO here, we might call screen_redraw() to translate fg/bg 2-bit pixels to palette-based 8-bit pixels
-    // but probably makes more sense to over-ride screen_write and just write directly to each fg/bg layer and'
+    // but probably makes more sense to over-ride screen_write and just write directly to each fg/bg layer and
     // skip allocating the higher-level uxn_screen.pixels altogether as
     // it is not needed due to ios supporting two layers.
     u16 width, height;
@@ -40,18 +69,19 @@ redraw(Uxn *u) {
                 width, height, uxn_screen.width, uxn_screen.height);
         PlatformSetScreenSize(uxn_screen.width, uxn_screen.height);
     }
-    PlatformBitmap bg = {
-        .width = uxn_screen.width,
-        .height = uxn_screen.height,
-        .pixels = uxn_screen.bg.pixels,
-    };
+    screen_redraw(&uxn_screen, uxn_screen.pixels);
+    //PlatformBitmap bg = {
+    //    .width = uxn_screen.width,
+    //    .height = uxn_screen.height,
+    //    .pixels = uxn_screen.bg.pixels,
+    //};
     PlatformBitmap fg = {
         .width = uxn_screen.width,
         .height = uxn_screen.height,
-        .pixels = uxn_screen.fg.pixels,
+        .pixels = uxn_screen.pixels,
     };
     // screen_resize() call elsewhere initializes these arrays of pixels
-    PlatformDrawBackground(&bg);
+    //PlatformDrawBackground(&bg);
     PlatformDrawForeground(&fg);
     fprintf(stderr, "in redraw() set reqdraw=0\n");
     reqdraw = 0;
@@ -111,7 +141,7 @@ xscreen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
           layer->pixels[i+3] = color_value & 0xff;
           layer->changed = 1;
         } else {
-            fprintf(stderr, "screen_write() already written that color to coordinate\n");
+            //fprintf(stderr, "screen_write() already written that color to coordinate\n");
         }
   }
 }
@@ -257,6 +287,8 @@ uxnapp_init(void) {
 //    if (!initppu(&uxn_screen, w, h)) {
 //        return;
 //    }
+    // uxn/devices/screen.c assumes uxn_screen.pixels is Uint32 * width * height
+    // but ios texture is Uint8 * 4 * width * height, aka four bytes per pixel
     screen_resize(&uxn_screen, w, h);
     // I think I need a screen_resize() like function which initializes both layers in uxn_screen.
     
