@@ -207,6 +207,7 @@ void system_deo_special(Uint8 *d, Uint8 port)
 
 // TODO refactor nil_dei() and nil_deo() from uxn/src/uxnmenu.c to uxn/src/devices/something.c?
 // copied from uxn/src/uxnemu.c (SDL emulator)
+/*
 static Uint8
 nil_dei(Uint8 *d, Uint8 port)
 {
@@ -218,6 +219,7 @@ nil_deo(Uint8 *d, Uint8 port)
     (void)d;
     (void)port;
 }
+*/
 
 #define RAMSIZE 0x10000
 
@@ -282,19 +284,10 @@ uxnapp_init(void) {
     PlatformCopyRom(u->ram + PAGE_PROGRAM, RAMSIZE - PAGE_PROGRAM);
     u16 w, h;
     PlatformGetScreenSize(&w, &h);
-    //w /= 8;
-    //h /= 8;
-//    if (!initppu(&uxn_screen, w, h)) {
-//        return;
-//    }
-    // uxn/devices/screen.c assumes uxn_screen.pixels is Uint32 * width * height
-    // but ios texture is Uint8 * 4 * width * height, aka four bytes per pixel
-    screen_resize(&uxn_screen, w, h);
-    // I think I need a screen_resize() like function which initializes both layers in uxn_screen.
-    
+    screen_resize(&uxn_screen, w, h); // this function allocates foreground, background and resulting pixels
 
-    u->dev[0x2] = uxn_screen.width * 8;
-    u->dev[0x4] = uxn_screen.height * 8;
+    u->dev[0x2] = uxn_screen.width;
+    u->dev[0x4] = uxn_screen.height;
 
     uxn_eval(u, PAGE_PROGRAM);
     redraw(u);
