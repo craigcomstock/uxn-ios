@@ -113,20 +113,20 @@ audio_talk(Device *d, Uint8 b0, Uint8 w) {
 static Uint8
 emu_dei(Uxn *u, Uint8 addr)
 {
-    /*
+    
     Uint8 p = addr & 0x0f, d = addr & 0xf0;
     switch(d) {
     case 0x20: return screen_dei(&u->dev[d], p);
-    case 0x30: return audio_dei(0, &u->dev[d], p);
-    case 0x40: return audio_dei(1, &u->dev[d], p);
-    case 0x50: return audio_dei(2, &u->dev[d], p);
-    case 0x60: return audio_dei(3, &u->dev[d], p);
-    case 0xa0: return file_dei(0, &u->dev[d], p);
-    case 0xb0: return file_dei(1, &u->dev[d], p);
-    case 0xc0: return datetime_dei(&u->dev[d], p);
+    //case 0x30: return audio_dei(0, &u->dev[d], p);
+    //case 0x40: return audio_dei(1, &u->dev[d], p);
+    //case 0x50: return audio_dei(2, &u->dev[d], p);
+    //case 0x60: return audio_dei(3, &u->dev[d], p);
+    //case 0xa0: return file_dei(0, &u->dev[d], p);
+    //case 0xb0: return file_dei(1, &u->dev[d], p);
+    //case 0xc0: return datetime_dei(&u->dev[d], p);
     }
     return u->dev[addr];
-     */
+    // wacky, todo, why two returns? Twas this way in upstream unx right?
     return 0;
 }
 
@@ -142,7 +142,7 @@ emu_deo(Uxn *u, Uint8 addr, Uint8 v)
             screen_palette(&uxn_screen, &u->dev[0x8]);
         break;
     case 0x10: console_deo(&u->dev[d], p); break;
-    //case 0x20: screen_deo(u->ram, &u->dev[d], p); break;
+    case 0x20: screen_deo(u->ram, &u->dev[d], p); break;
     //case 0x30: audio_deo(0, &u->dev[d], p, u); break;
     //case 0x40: audio_deo(1, &u->dev[d], p, u); break;
     //case 0x50: audio_deo(2, &u->dev[d], p, u); break;
@@ -160,29 +160,14 @@ uxnapp_init(void) {
     PlatformFree(u->ram);
     if(!uxn_boot(u, (Uint8 *)PlatformAlloc(0x10300), emu_dei, emu_deo))
         return error("Boot", "Failed to start uxn.");
+    u16 w, h;
+    PlatformGetScreenSize(&w, &h);
+    screen_resize(&uxn_screen, w, h);
     PlatformCopyRom(u->ram + PAGE_PROGRAM, (u32)(sizeof(u->ram) - PAGE_PROGRAM)); // conversion problem here? sizeof() returns what? #define PAGE_PROGRAM is ?
 //    exec_deadline = SDL_GetPerformanceCounter() + deadline_interval;
     if(!uxn_eval(u, PAGE_PROGRAM))
         return error("Boot", "Failed to eval rom.");
-     /*
-    u16 w, h;
-    PlatformGetScreenSize(&w, &h);
-    w /= 8;
-    h /= 8;
-    if (!initppu(&_ppu, w, h)) {
-        return;
-    }
-    */
-    
-    //mempoke16(devscreen->dat, 2, _ppu.hor * 8);
-    //mempoke16(devscreen->dat, 4, _ppu.ver * 8);
 
-    
-    if(!uxn_eval(u, PAGE_PROGRAM))
-    {
-        fprintf(stderr, "Failed to eval rom.");
-        return; // todo error to UI
-    }
     redraw();
 }
 
