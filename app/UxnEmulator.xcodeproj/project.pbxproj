@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4468D0FC298C4B650082F45A /* uxn.c in Sources */ = {isa = PBXBuildFile; fileRef = 4468D0FB298C4B650082F45A /* uxn.c */; };
+		4468D0FE298C4DFC0082F45A /* screen.c in Sources */ = {isa = PBXBuildFile; fileRef = 4468D0FD298C4DFC0082F45A /* screen.c */; };
+		4468D100298C4E3F0082F45A /* system.c in Sources */ = {isa = PBXBuildFile; fileRef = 4468D0FF298C4E3F0082F45A /* system.c */; };
 		A592F9F126A9CB6C0032337C /* PlatformAudio.m in Sources */ = {isa = PBXBuildFile; fileRef = A592F9F026A9CB6C0032337C /* PlatformAudio.m */; };
 		A5971D5B26A1F4390071EB84 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = A5971D5A26A1F4390071EB84 /* AppDelegate.m */; };
 		A5971D6426A1F4390071EB84 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A5971D6226A1F4390071EB84 /* Main.storyboard */; };
@@ -26,6 +29,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		4468D0FB298C4B650082F45A /* uxn.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = uxn.c; path = ../uxn/src/uxn.c; sourceTree = "<group>"; };
+		4468D0FD298C4DFC0082F45A /* screen.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = screen.c; path = ../uxn/src/devices/screen.c; sourceTree = "<group>"; };
+		4468D0FF298C4E3F0082F45A /* system.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = system.c; path = ../uxn/src/devices/system.c; sourceTree = "<group>"; };
 		A54E186326AC41910028E06E /* SampleCode.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SampleCode.xcconfig; sourceTree = "<group>"; };
 		A592F9EF26A9CB6C0032337C /* PlatformAudio.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PlatformAudio.h; sourceTree = "<group>"; };
 		A592F9F026A9CB6C0032337C /* PlatformAudio.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PlatformAudio.m; sourceTree = "<group>"; };
@@ -72,6 +78,9 @@
 		A5971D4D26A1F4390071EB84 = {
 			isa = PBXGroup;
 			children = (
+				4468D0FF298C4E3F0082F45A /* system.c */,
+				4468D0FD298C4DFC0082F45A /* screen.c */,
+				4468D0FB298C4B650082F45A /* uxn.c */,
 				A5971D5826A1F4390071EB84 /* Emulator */,
 				A5971D5726A1F4390071EB84 /* Products */,
 				A5DBEA2F26A330BA00D802CF /* roms */,
@@ -216,6 +225,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4468D100298C4E3F0082F45A /* system.c in Sources */,
+				4468D0FE298C4DFC0082F45A /* screen.c in Sources */,
+				4468D0FC298C4B650082F45A /* uxn.c in Sources */,
 				A5971D5B26A1F4390071EB84 /* AppDelegate.m in Sources */,
 				A5971D6C26A1F4390071EB84 /* main.m in Sources */,
 				A5DBEA3A26A34EE300D802CF /* app_entry.cpp in Sources */,

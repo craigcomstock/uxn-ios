@@ -10,16 +10,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)renderLoop:(void (^) (void))block;
 
 @property (assign, nonatomic, readonly) CGSize canvasSize;
-@property (strong, nonatomic, nullable, readonly) NSData* bgPixels;
-@property (strong, nonatomic, nullable, readonly) NSData* fgPixels;
+@property (strong, nonatomic, nullable, readonly) NSData* data;
 @property (assign, nonatomic, readonly) NSInteger targetFramesPerSecond;
 @property (strong, nonatomic, nullable) NSData* romData;
 @property (assign, nonatomic) BOOL isAudioEnabled;
 
 - (void)setMousePosition:(CGPoint)point;
 - (void)handleMouseButton:(NSUInteger)button isDown:(BOOL)down;
-- (void)setBackgroundPixels:(void*)pixels;
-- (void)setForegroundPixels:(void*)pixels;
+- (void)setPixels:(void*)data;
 
 @end
 

@@ -24,7 +24,7 @@ vertexShader(uint vertexId [[vertex_id]],
     return out;
 }
 
-
+// todo how does this work? can I haz one texture?
 fragment float4
 samplingShader(RasterizerData in [[stage_in]],
                texture2d<half> bgTexture [[texture(TextureIndexBaseColor)]],

@@ -1,88 +1,70 @@
 #include <time.h>
+#include <stdio.h>
 #include "emu_platform.h"
 #include "app_uxn.h"
 
 #import "uxn.h"
-
-#include "devices/apu.c"
-#include "devices/ppu.c"
-#if DEBUG
-#include "uxn.c"
-#else
-#include "uxn-fast.c"
-#endif
+#include "devices/screen.h"
+//#include "devices/system.c"
+//#include "devices/screen.c"
+//#include "devices/audio.c"
+//#include "devices/file.h"
+//#include "devices/controller.c"
+//#include "devices/mouse.c"
+//#include "devices/datetime.c"
 
 static Uxn _uxn;
-static Ppu _ppu;
-static Apu _apu[POLYPHONY];
-static Device *devsystem, *devscreen, *devmouse, *devaudio0;
+/* no need, already present in uxn/src/devices/screen.c
+UxnScreen uxn_screen;
+ */
 static Uint8 reqdraw = 0;
 
+// from src/uxnemu.c
+//static int
+void
+error(char *msg, const char *err)
+{
+    fprintf(stderr, "%s: %s\n", msg, err);
+    fflush(stderr);
+//    return 0;
+}
+
+static int
+console_input(Uxn *u, char c)
+{
+    Uint8 *d = &u->dev[0x10];
+    d[0x02] = c;
+    return uxn_eval(u, GETVEC(d));
+}
 
 static void
-redraw(Uxn *u) {
-    if(devsystem->dat[0xe]) {
-        inspect(&_ppu, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
+console_deo(Uint8 *d, Uint8 port)
+{
+    FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr
+                                                  : 0;
+    if(fd) {
+        fputc(d[port], fd);
+        fflush(fd);
     }
-    PlatformBitmap bg = {
-        .width = _ppu.width,
-        .height = _ppu.height,
-        .pixels = _ppu.bg.pixels,
+}
+
+// from src/uxnemu.c
+static void
+redraw(void) {
+    // TODO if UI width/height is different than uxn_screen width/height, then resize UI element
+    screen_redraw(&uxn_screen, uxn_screen.pixels);
+
+    // UxnScreen, Layer.pixels is Uint8 aka 4-bit uxn colors, not 32bit RGBA as we need it to be, translate from palette.
+    PlatformBitmap bmp = {
+        .width = uxn_screen.width,
+        .height = uxn_screen.height,
+        .pixels = uxn_screen.pixels,
     };
-    PlatformBitmap fg = {
-        .width = _ppu.width,
-        .height = _ppu.height,
-        .pixels = _ppu.fg.pixels,
-    };
-    PlatformDrawBackground(&bg);
-    PlatformDrawForeground(&fg);
-    reqdraw = 0;
+    PlatformDrawBitmap(&bmp);
+    reqdraw = 0; // TODO need this?
 }
 
-
-static void
-nil_talk(Device *d, Uint8 b0, Uint8 w) {
-}
-
-
-static void
-system_talk(Device *d, Uint8 b0, Uint8 w) {
-    if(!w) {
-        d->dat[0x2] = d->u->wst.ptr;
-        d->dat[0x3] = d->u->rst.ptr;
-    } else {
-        putcolors(&_ppu, &d->dat[0x8]);
-        reqdraw = 1;
-    }
-}
-
-
-static void
-console_talk(Device *d, Uint8 b0, Uint8 w) {
-//    if(w && b0 > 0x7)
-//        write(b0 - 0x7, (char *)&d->dat[b0], 1);
-}
-
-
-static void
-screen_talk(Device *d, Uint8 b0, Uint8 w) {
-    if(w && b0 == 0xe) {
-        Uint16 x = mempeek16(d->dat, 0x8);
-        Uint16 y = mempeek16(d->dat, 0xa);
-        Uint8 *addr = &d->mem[mempeek16(d->dat, 0xc)];
-        Layer *layer = d->dat[0xe] >> 4 & 0x1 ? &_ppu.fg : &_ppu.bg;
-        Uint8 mode = d->dat[0xe] >> 5;
-        if(!mode)
-            putpixel(&_ppu, layer, x, y, d->dat[0xe] & 0x3);
-        else if(mode-- & 0x1)
-            puticn(&_ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
-        else
-            putchr(&_ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
-        reqdraw = 1;
-    }
-}
-
-
+/*
 static void
 file_talk(Device *d, Uint8 b0, Uint8 w) {
     Uint8 read = b0 == 0xd;
@@ -124,34 +106,65 @@ audio_talk(Device *d, Uint8 b0, Uint8 w) {
         PlatformAudioOpenOutput();
     }
 }
+ */
 
+
+// from uxn/src/uxnemu.c
+static Uint8
+emu_dei(Uxn *u, Uint8 addr)
+{
+    /*
+    Uint8 p = addr & 0x0f, d = addr & 0xf0;
+    switch(d) {
+    case 0x20: return screen_dei(&u->dev[d], p);
+    case 0x30: return audio_dei(0, &u->dev[d], p);
+    case 0x40: return audio_dei(1, &u->dev[d], p);
+    case 0x50: return audio_dei(2, &u->dev[d], p);
+    case 0x60: return audio_dei(3, &u->dev[d], p);
+    case 0xa0: return file_dei(0, &u->dev[d], p);
+    case 0xb0: return file_dei(1, &u->dev[d], p);
+    case 0xc0: return datetime_dei(&u->dev[d], p);
+    }
+    return u->dev[addr];
+     */
+    return 0;
+}
 
 static void
-datetime_talk(Device *d, Uint8 b0, Uint8 w) {
-    time_t seconds = time(NULL);
-    struct tm *t = localtime(&seconds);
-    t->tm_year += 1900;
-    mempoke16(d->dat, 0x0, t->tm_year);
-    d->dat[0x2] = t->tm_mon;
-    d->dat[0x3] = t->tm_mday;
-    d->dat[0x4] = t->tm_hour;
-    d->dat[0x5] = t->tm_min;
-    d->dat[0x6] = t->tm_sec;
-    d->dat[0x7] = t->tm_wday;
-    mempoke16(d->dat, 0x08, t->tm_yday);
-    d->dat[0xa] = t->tm_isdst;
+emu_deo(Uxn *u, Uint8 addr, Uint8 v)
+{
+    Uint8 p = addr & 0x0f, d = addr & 0xf0;
+    u->dev[addr] = v;
+    switch(d) {
+    case 0x00:
+        //todo: system_deo(u, &u->dev[d], p);
+        if(p > 0x7 && p < 0xe)
+            screen_palette(&uxn_screen, &u->dev[0x8]);
+        break;
+    case 0x10: console_deo(&u->dev[d], p); break;
+    //case 0x20: screen_deo(u->ram, &u->dev[d], p); break;
+    //case 0x30: audio_deo(0, &u->dev[d], p, u); break;
+    //case 0x40: audio_deo(1, &u->dev[d], p, u); break;
+    //case 0x50: audio_deo(2, &u->dev[d], p, u); break;
+    //case 0x60: audio_deo(3, &u->dev[d], p, u); break;
+    //case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
+    //case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
+    }
 }
 
 
 void
 uxnapp_init(void) {
     Uxn* u = &_uxn;
-
-    bootuxn(u);
-
-    // loaduxn
-    PlatformCopyRom(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM);
-    
+    // from uxn/src/uxnemu.c start()
+    PlatformFree(u->ram);
+    if(!uxn_boot(u, (Uint8 *)PlatformAlloc(0x10300), emu_dei, emu_deo))
+        return error("Boot", "Failed to start uxn.");
+    PlatformCopyRom(u->ram + PAGE_PROGRAM, (u32)(sizeof(u->ram) - PAGE_PROGRAM)); // conversion problem here? sizeof() returns what? #define PAGE_PROGRAM is ?
+//    exec_deadline = SDL_GetPerformanceCounter() + deadline_interval;
+    if(!uxn_eval(u, PAGE_PROGRAM))
+        return error("Boot", "Failed to eval rom.");
+     /*
     u16 w, h;
     PlatformGetScreenSize(&w, &h);
     w /= 8;
@@ -159,78 +172,75 @@ uxnapp_init(void) {
     if (!initppu(&_ppu, w, h)) {
         return;
     }
+    */
+    
+    //mempoke16(devscreen->dat, 2, _ppu.hor * 8);
+    //mempoke16(devscreen->dat, 4, _ppu.ver * 8);
 
-    devsystem = portuxn(u, 0x0, "system", system_talk);
-    portuxn(u, 0x1, "console", console_talk);
-    devscreen = portuxn(u, 0x2, "screen", screen_talk);
-    devaudio0 = portuxn(u, 0x3, "audio0", audio_talk);
-    portuxn(u, 0x4, "audio1", audio_talk);
-    portuxn(u, 0x5, "audio2", audio_talk);
-    portuxn(u, 0x6, "audio3", audio_talk);
-    portuxn(u, 0x7, "---", nil_talk);
-    portuxn(u, 0x8, "controller", nil_talk);
-    devmouse = portuxn(u, 0x9, "mouse", nil_talk);
-    portuxn(u, 0xa, "file", file_talk);
-    portuxn(u, 0xb, "datetime", datetime_talk);
-    portuxn(u, 0xc, "---", nil_talk);
-    portuxn(u, 0xd, "---", nil_talk);
-    portuxn(u, 0xe, "---", nil_talk);
-    portuxn(u, 0xf, "---", nil_talk);
-
-    mempoke16(devscreen->dat, 2, _ppu.hor * 8);
-    mempoke16(devscreen->dat, 4, _ppu.ver * 8);
-
-    evaluxn(u, PAGE_PROGRAM);
-    redraw(u);
+    
+    if(!uxn_eval(u, PAGE_PROGRAM))
+    {
+        fprintf(stderr, "Failed to eval rom.");
+        return; // todo error to UI
+    }
+    redraw();
 }
 
 
 void
 uxnapp_deinit(void) {
     PlatformAudioCloseOutput();
-    PlatformFree(_ppu.bg.pixels);
+    /*
+    PlatformFree(uxn_screen.bg.pixels);
     PlatformFree(_ppu.fg.pixels);
+     */
 }
+
 
 
 void
 uxnapp_runloop(void) {
     Uxn* u = &_uxn;
-    evaluxn(u, mempeek16(devscreen->dat, 0));
-    if(reqdraw || devsystem->dat[0xe])
-        redraw(u);
+    uxn_eval(u, GETVEC(&u->dev[0x20]));
+    if(uxn_screen.fg.changed || uxn_screen.bg.changed)
+        redraw();
 }
 
 
 void
 uxnapp_setdebug(u8 debug) {
+    /*
     Uxn* u = &_uxn;
     devsystem->dat[0xe] = debug ? 1 : 0;
     redraw(u);
+     */
 }
 
-
-static int
+/* remove this, already present in uxn/src/devices/screen.c */
+/*int
 clamp(int val, int min, int max) {
     return (val >= min) ? (val <= max) ? val : max : min;
 }
+ */
 
 
 void
 uxnapp_movemouse(i16 mx, i16 my) {
+    /*
     Uxn* u = &_uxn;
-
     Uint16 x = clamp(mx, 0, _ppu.hor * 8 - 1);
     Uint16 y = clamp(my, 0, _ppu.ver * 8 - 1);
     mempoke16(devmouse->dat, 0x2, x);
     mempoke16(devmouse->dat, 0x4, y);
 
     evaluxn(u, mempeek16(devmouse->dat, 0));
+*/
 }
 
 
 void
 uxnapp_setmousebutton(u8 button, u8 state) {
+    /*
     Uxn* u = &_uxn;
 
     Uint8 flag = 0x00;
@@ -247,11 +257,13 @@ uxnapp_setmousebutton(u8 button, u8 state) {
     }
 
     evaluxn(u, mempeek16(devmouse->dat, 0));
+ */
 }
 
 
 void
 uxnapp_audio_callback(Uint8 *stream, Uint32 len) {
+    /*
     int running = 0;
     Sint16 *samples = (Sint16 *)stream;
     PlatformMemset(stream, 0, len);
@@ -261,4 +273,5 @@ uxnapp_audio_callback(Uint8 *stream, Uint32 len) {
     if (!running) {
         PlatformAudioPauseOutput();
     }
+     */
 }

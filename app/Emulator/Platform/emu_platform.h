@@ -36,8 +36,7 @@ void PlatformFree(void* memory);
 void PlatformMemset(void* memory, u8 value, u32 size);
 
 void PlatformGetScreenSize(u16* width, u16* height);
-void PlatformDrawBackground(const PlatformBitmap* bitmap);
-void PlatformDrawForeground(const PlatformBitmap* bitmap);
+void PlatformDrawBitmap(const PlatformBitmap* bitmap);
 
 void PlatformCopyRom(u8* buffer, u32 size);
 void PlatformAudioOpenOutput(void);

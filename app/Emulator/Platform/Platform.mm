@@ -30,14 +30,8 @@ PlatformGetScreenSize(u16* width, u16* height) {
 
 
 void
-PlatformDrawBackground(const PlatformBitmap* bitmap) {
-    [Platform.sharedPlatform setBackgroundPixels:bitmap->pixels];
-}
-
-
-void
-PlatformDrawForeground(const PlatformBitmap* bitmap) {
-    [Platform.sharedPlatform setForegroundPixels:bitmap->pixels];
+PlatformDrawBitmap(const PlatformBitmap* bitmap) {
+    [Platform.sharedPlatform setPixels:bitmap->pixels];
 }
 
 
@@ -105,8 +99,7 @@ PlatformSeekFile(PlatformFile file, u32 offset, u32 whence) {
 @interface Platform ()
 
 @property (assign, nonatomic) CGSize canvasSize;
-@property (strong, nonatomic, nullable) NSData* bgPixels;
-@property (strong, nonatomic, nullable) NSData* fgPixels;
+@property (strong, nonatomic, nullable) NSData* data;
 @property (assign, nonatomic) NSInteger targetFramesPerSecond;
 @property (assign, nonatomic) CGContextRef imageContext;
 @property (strong, nonatomic, nullable) UIImage* backgroundImage;
@@ -197,16 +190,11 @@ PlatformSeekFile(PlatformFile file, u32 offset, u32 whence) {
     }
 }
 
-- (void)setBackgroundPixels:(void *)pixels {
+- (void)setPixels:(void *)data {
     CGSize canvasSize = self.canvasSize;
     NSUInteger count = 4 * canvasSize.width * canvasSize.height;
-    self.bgPixels = [NSData dataWithBytes:pixels length:count];
+    self.data = [NSData dataWithBytes:data length:count];
 }
 
-- (void)setForegroundPixels:(void *)pixels {
-    CGSize canvasSize = self.canvasSize;
-    NSUInteger count = 4 * canvasSize.width * canvasSize.height;
-    self.fgPixels = [NSData dataWithBytes:pixels length:count];
-}
 
 @end

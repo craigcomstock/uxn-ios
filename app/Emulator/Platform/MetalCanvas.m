@@ -12,8 +12,7 @@
 @property (strong, nonatomic) id<MTLRenderPipelineState> pipelineState;
 @property (strong, nonatomic) id<MTLBuffer> vertices;
 @property (assign, nonatomic) NSUInteger vertexCount;
-@property (strong, nonatomic) id<MTLTexture> backgroundTexture;
-@property (strong, nonatomic) id<MTLTexture> foregroundTexture;
+@property (strong, nonatomic) id<MTLTexture> texture;
 
 @end
 
@@ -76,7 +75,7 @@
         PlatformDelegateAppRunloop();
     }];
 
-    [self updateTextures];
+    [self updateTexture];
     
     MTLRenderPassDescriptor* renderPass = [self currentRenderPassDescriptor];
     if (!renderPass) {
@@ -89,8 +88,7 @@
     [commandEncoder setRenderPipelineState:self.pipelineState];
     [commandEncoder setVertexBuffer:self.vertices offset:0 atIndex:VertexInputIndexVertices];
     [commandEncoder setVertexBytes:&_viewportSize length:sizeof(_viewportSize) atIndex:VertexInputIndexViewportSize];
-    [commandEncoder setFragmentTexture:self.backgroundTexture atIndex:TextureIndexBaseColor];
-    [commandEncoder setFragmentTexture:self.foregroundTexture atIndex:TextureIndexForeColor];
+    [commandEncoder setFragmentTexture:self.texture atIndex:TextureIndexBaseColor];
     [commandEncoder drawPrimitives:(MTLPrimitiveTypeTriangle) vertexStart:0 vertexCount:self.vertexCount];
     [commandEncoder endEncoding];
     
@@ -101,8 +99,7 @@
 - (void)setDevice:(id<MTLDevice>)device {
     [super setDevice:device];
 
-    self.backgroundTexture = [self makeTexture];
-    self.foregroundTexture = [self makeTexture];
+    self.texture = [self makeTexture];
     
     float hx = _viewportSize.x / 2;
     float hy = _viewportSize.y / 2;
@@ -147,9 +144,8 @@
     return [self.device newTextureWithDescriptor:textureDescriptor];
 }
 
-- (void)updateTextures {
-    [self updateTexture:self.backgroundTexture withData:Platform.sharedPlatform.bgPixels];
-    [self updateTexture:self.foregroundTexture withData:Platform.sharedPlatform.fgPixels];
+- (void)updateTexture {
+    [self updateTexture:self.texture withData:Platform.sharedPlatform.data];
 }
 
 - (void)updateTexture:(id<MTLTexture>)texture withData:(NSData*)data {
